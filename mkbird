@@ -51,7 +51,7 @@ class BirdFormatter(Formatter):
         }
         """ % (name, template, peer, asn)))
 
-def create_config(srcdir, exclude, prefix, defaulttemplate, templates, bird4):
+def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family):
     """
     Generates a configuration using all files in srcdir (non-recursively)
     excluding communities from 'exclude'.
@@ -61,8 +61,6 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, bird4):
     formatter = BirdFormatter()
     template = defaultdict(lambda: defaulttemplate)
     template.update(dict(map(lambda s: s.split(":"), templates)))
-
-    family = "ipv4" if bird4 else "ipv6"
 
     for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
         fpath = os.path.join(srcdir, fname)
@@ -88,8 +86,10 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, bird4):
 
 if __name__ == "__main__":
     parser = OptionParser()
-    parser.add_option("-4", dest="bird4", action="store_true",
-        help="Generate bird4 config instead of bird6", default=False)
+    parser.add_option("-4", dest="family", action="store_const", const="ipv4",
+        help="Generate bird4 config")
+    parser.add_option("-6", dest="family", action="store_const", const="ipv6",
+        help="Generate bird6 config")
     parser.add_option("-s", "--sourcedir", dest="src",
         help="Use files in DIR as input files. Default: data/", metavar="DIR",
         default="data")
@@ -105,9 +105,10 @@ if __name__ == "__main__":
     parser.add_option("-t", "--template", dest="templates", action="append",
         help="COMMUNITY:TEMPLATE", metavar="TEMPLATE",
         default=[])
+    parser.set_defaults(family="ipv6")
 
     (options, args) = parser.parse_args()
 
     create_config(options.src, set(options.exclude), options.prefix,
             options.defaulttemplate, options.templates,
-            options.bird4)
+            options.family)

@@ -29,7 +29,7 @@ class Formatter(object):
         """
         self.config.append("# " + "\n# ".join(comment.split("\n")))
 
-    def add_data(self, domains, servers):
+    def add_data(self, asn, name, template, peer):
         """
         Add config directives so that every domain in domains is forwarded to
         every server in servers.
@@ -51,14 +51,23 @@ class BirdFormatter(Formatter):
         }
         """ % (name, template, peer, asn)))
 
-def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family):
+class QuaggaFormatter(Formatter):
+    "Formatter for quagga"
+    def add_data(self, asn, name, template, peer):
+        self.config.append(dedent("""
+            neighbor %(peer)s remote-as %(asn)s
+            neighbor %(peer)s description %(name)s
+            neighbor %(peer)s peer-group %(template)s
+        """ % {"peer": peer, "asn": asn, "name": name, "template": template}))
+
+def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, fmtclass):
     """
     Generates a configuration using all files in srcdir (non-recursively)
     excluding communities from 'exclude'.
 
     The files are read in lexicographic order to produce deterministic results.
     """
-    formatter = BirdFormatter()
+    formatter = fmtclass()
     template = defaultdict(lambda: defaulttemplate)
     template.update(dict(map(lambda s: s.split(":"), templates)))
 
@@ -85,11 +94,20 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family):
     print(formatter.finalize())
 
 if __name__ == "__main__":
+    formatters = {
+        "bird": BirdFormatter,
+        "quagga": QuaggaFormatter,
+    }
+
     parser = OptionParser()
+    parser.add_option("-f", "--format", dest="fmt",
+        help="Create config in format FMT. Possible values: %s. Default: dnsmasq" % ", ".join(formatters.keys()), metavar="FMT",
+        choices=list(formatters.keys()),
+        default="bird")
     parser.add_option("-4", dest="family", action="store_const", const="ipv4",
-        help="Generate bird4 config")
+        help="Generate IPv4 config")
     parser.add_option("-6", dest="family", action="store_const", const="ipv6",
-        help="Generate bird6 config")
+        help="Generate IPv6 config")
     parser.add_option("-s", "--sourcedir", dest="src",
         help="Use files in DIR as input files. Default: data/", metavar="DIR",
         default="data")
@@ -100,10 +118,10 @@ if __name__ == "__main__":
         help="Prefix, e.g. bgp_icvpn_", metavar="PREFIX",
         default="")
     parser.add_option("-d", "--default", dest="defaulttemplate",
-        help="TEMPLATE", metavar="TEMPLATE",
+        help="Default template/peer-group to use", metavar="TEMPLATE",
         default=None)
     parser.add_option("-t", "--template", dest="templates", action="append",
-        help="COMMUNITY:TEMPLATE", metavar="TEMPLATE",
+        help="Use different template/peer-group for some communities", metavar="COMMUNITY:TEMPLATE",
         default=[])
     parser.set_defaults(family="ipv6")
 
@@ -111,4 +129,4 @@ if __name__ == "__main__":
 
     create_config(options.src, set(options.exclude), options.prefix,
             options.defaulttemplate, options.templates,
-            options.family)
+            options.family, formatters[options.fmt])

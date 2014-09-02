@@ -72,6 +72,9 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, f
     template.update(dict(map(lambda s: s.split(":"), templates)))
 
     for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
+        if fname.startswith("README"):
+            continue
+
         fpath = os.path.join(srcdir, fname)
         if os.path.isfile(fpath):
             with open(fpath) as f:

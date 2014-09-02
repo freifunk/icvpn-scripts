@@ -93,9 +93,10 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, f
                     if not family in d:
                         continue
 
+                    name = prefix + community + "_" + host
                     peer = d[family]
 
-                    formatter.add_data(data['asn'], prefix + host,
+                    formatter.add_data(data['asn'], name,
                             template[community], peer)
 
     print(formatter.finalize())

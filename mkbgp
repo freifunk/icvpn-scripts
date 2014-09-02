@@ -53,6 +53,10 @@ class BirdFormatter(Formatter):
 
 class QuaggaFormatter(Formatter):
     "Formatter for quagga"
+
+    def add_comment(self, comment):
+        self.config.append("! " + "\n! ".join(comment.split("\n")))
+
     def add_data(self, asn, name, template, peer):
         self.config.append(dedent("""
             neighbor %(peer)s remote-as %(asn)s

@@ -51,7 +51,7 @@ class Formatter(object):
 
 
 class SmokePingFormatter(Formatter):
-    "Formatter for bind9 using type forward"
+    "Formatter for SmokePing (http://oss.oetiker.ch/smokeping/)"
     def add_data(self, name, ip):
       self.config.append(dedent("""
         ++ %(name)s
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
-        help="Create config in format FMT. Possible values: %s. Default: dnsmasq" % ", ".join(formatters.keys()), metavar="FMT",
+        help="Create config in format FMT. Possible values: %s. Default: SmokePing" % ", ".join(formatters.keys()), metavar="FMT",
         choices=list(formatters.keys()),
         default="SmokePing")
     parser.add_option("-s", "--sourcedir", dest="src",

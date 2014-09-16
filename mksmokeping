@@ -29,7 +29,7 @@ class SmokePingFormatter(Formatter):
         """ % {"name": name}))
 
 
-def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, fmtclass):
+def create_config(srcdir, exclude, fmtclass):
     """
     Generates a configuration using all files in srcdir (non-recursively)
     excluding communities from 'exclude'.
@@ -37,8 +37,6 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, f
     The files are read in lexicographic order to produce deterministic results.
     """
     formatter = fmtclass()
-    template = defaultdict(lambda: defaulttemplate)
-    template.update(dict(map(lambda s: s.split(":"), templates)))
 
     for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
         if fname.startswith("README"):
@@ -84,6 +82,4 @@ if __name__ == "__main__":
 
     (options, args) = parser.parse_args()
 
-    create_config(options.src, set(options.exclude), options.prefix,
-            options.defaulttemplate, options.templates,
-            options.family, formatters[options.fmt])
+    create_config(options.src, set(options.exclude),formatters[options.fmt])

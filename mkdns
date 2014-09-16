@@ -87,7 +87,7 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
         if os.path.isfile(fpath):
             with open(fpath) as f:
                 data = yaml.load(f)
-                if not (data and 'domains' in data and 'nameservers' in data):
+                if not data:
                     continue
 
                 formatter.add_comment("\n%s\n" % fname)

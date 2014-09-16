@@ -87,7 +87,7 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
         if os.path.isfile(fpath):
             with open(fpath) as f:
                 data = yaml.load(f)
-                if not ('domains' in data and 'nameservers' in data):
+                if not (data and 'domains' in data and 'nameservers' in data):
                     continue
 
                 formatter.add_comment("\n%s\n" % fname)
@@ -96,9 +96,9 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
 
                 servers = list(servers)
 
-            if len(data['domains']) == 0:
+            if not data['domains']:
                 formatter.add_comment("No valid domains found")
-            elif len(servers) == 0:
+            elif not servers:
                 formatter.add_comment("No valid servers found")
             else:
                 formatter.add_data(data['domains'], servers)

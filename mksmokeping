@@ -52,15 +52,16 @@ class Formatter(object):
 
 class SmokePingFormatter(Formatter):
     "Formatter for SmokePing (http://oss.oetiker.ch/smokeping/)"
-    def add_data(self, name, ip):
+    def add_data(self, name, ip, probe):
       self.config.append(dedent("""
         ++ %(name)s
         menu = %(name)s
         title = %(name)s
+        probe = %(probe)s
         host = %(ip)s
         #alerts = someloss
 
-        """ % {"name": name, "ip":ip}))
+        """ % {"name": name, "ip":ip, "probe":probe}))
 
     def add_section(self, name):
       self.config.append(dedent("""
@@ -98,10 +99,10 @@ def create_config(srcdir, exclude, fmtclass):
                     d = data['bgp'][host]
                     if 'ipv4' in d:
                         peer = d['ipv4']
-                        formatter.add_data("ipv4-"+host, peer)
+                        formatter.add_data("ipv4-"+host, peer,'FPing')
                     if 'ipv6' in d:
                         peer = d['ipv6']
-                        formatter.add_data("ipv6-"+host, peer)
+                        formatter.add_data("ipv6-"+host, peer, 'FPing6')
 
     print(formatter.finalize())
 

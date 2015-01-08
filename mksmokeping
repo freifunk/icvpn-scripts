@@ -40,6 +40,9 @@ def create_config(srcdir, exclude, fmtclass):
     formatter = fmtclass()
 
     for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
+        if fname.startswith("."):
+            continue
+
         if fname.startswith("README"):
             continue
 

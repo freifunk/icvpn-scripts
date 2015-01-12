@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+
 class Formatter(object):
     """
     Abstract class to define the interface for formatters.
@@ -29,7 +30,7 @@ class Formatter(object):
         """
         raise NotImplementedError()
 
-    def add_section(self,name):
+    def add_section(self, name):
         """
         Add new Section Header to SmokePing
         """

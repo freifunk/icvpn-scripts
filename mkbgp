@@ -54,7 +54,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, f
                 data = yaml.load(f)
                 community = fname
 
-                if not 'bgp' in data:
+                if not data:
                     continue
 
                 for host in sorted(data['bgp'].keys()):

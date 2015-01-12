@@ -53,7 +53,7 @@ def create_config(srcdir, exclude, fmtclass):
                 data = yaml.load(f)
                 community = fname
 
-                if not 'bgp' in data:
+                if not data:
                     continue
 
                 for host in sorted(data['bgp'].keys()):

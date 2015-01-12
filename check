@@ -13,8 +13,23 @@ ICVPN_NETWORKS = {
 }
 
 
-def error(*arg):
-    print(*arg, file=sys.stderr)
+class ValidationException(Exception):
+    counter = 0
+    color = '\033[m'
+
+    def __init__(self, community, msg):
+        self.__class__.counter += 1
+        print("%s[%s] %s\033[m" % (self.color, community, msg),
+              file=sys.stderr)
+        super().__init__("[%s] %s" % (community, msg))
+
+
+class ValidationWarning(ValidationException):
+    color = '\033[93m'
+
+
+class ValidationError(ValidationException):
+    color = '\033[91m'
 
 
 def ip_family_address(family, address):
@@ -29,7 +44,7 @@ def ip_family_network(family, network):
 
 def check_dupe(name, v, d, community):
     if v in d:
-        error("Duplicate %s (%s):" % (name, v), d[v], community)
+        ValidationError(community, "Duplicate %s (%s): %s" % (name, v, d[v]))
         return 1
     else:
         d[v] = community
@@ -37,24 +52,22 @@ def check_dupe(name, v, d, community):
 
 
 def check_net(family, net, nets, community):
-    errcnt = 0
-
     try:
         net = ip_family_network(family, net)
     except ValueError:
-        errcnt += 1
-        error("Not an %s network: %s (%s)" % (family, net, community))
+        ValidationError(community, "Not an %s network: %s" % (family, net))
     else:
         for other in nets:
             if other.overlaps(net):
-                errcnt += 1
-                error("%s Network overlap: %s (%s), %s (%s)" %
-                      (family, community, net, nets[other], other))
+                ValidationError(
+                    community,
+                    "%s network overlap: %s (%s), %s (%s)" %
+                    (family, community, net, nets[other], other)
+                )
 
-        if errcnt == 0:
-            nets[net] = community
-
-    return errcnt
+        # we want to detect all possible network collisions, so we have to add
+        # even networks that had collisions to our dict
+        nets[net] = community
 
 
 def do_checks(srcdir):
@@ -69,21 +82,18 @@ def do_checks(srcdir):
         'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
         'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
     }
-    errcnt = 0
 
     def filereader_error_handler(community):
-        error("Invalid YAML: %s" % community)
-        errcnt += 1
+        ValidationError(community, "Invalid YAML")
 
     for community, data in get_communities_data(srcdir, [],
                                                 filereader_error_handler):
-        print("Checking", community)
-
+        orig_errcnt = 0
         if 'asn' in data:
-            errcnt += check_dupe("ASN", data['asn'], asns, community)
+            check_dupe("ASN", data['asn'], asns, community)
 
         for bgp in data.get('bgp', []):
-            errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
+            check_dupe("BGP peer name", bgp, bgp_gw, community)
 
             lastbytes = set()
 
@@ -93,24 +103,23 @@ def do_checks(srcdir):
                     ip = ip_family_address(upipclass,
                                            data['bgp'][bgp][ipclass])
                 except ValueError:
-                    errcnt += 1
-                    error("Not an %s BGP address: %s (%s)" %
-                          (upipclass, data['bgp'][bgp][ipclass], community))
-                    continue
+                    ValidationError(community,
+                                    "Not an %s BGP address: %s" %
+                                    (upipclass, data['bgp'][bgp][ipclass]))
 
-                errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+                check_dupe("BGP address", ip, bgp_gw_ip, community)
                 try:
                     network = ICVPN_NETWORKS[upipclass]
                 except KeyError:
-                    errcnt += 1
-                    error("Unknown BGP protocol class: %s (%s)" %
-                          (upipclass, community))
+                    ValidationWarning(community,
+                                      "Unknown BGP protocol class: %s" %
+                                      upipclass)
                     continue
 
                 if ip not in network:
-                    errcnt += 1
-                    error("%s BGP address in wrong subnet: %s (%s)" %
-                          (upipclass, data['bgp'][bgp][ipclass], community))
+                    ValidationError(community,
+                                    "%s BGP address in wrong subnet: %s" %
+                                    (upipclass, data['bgp'][bgp][ipclass]))
 
                 # we want that the last half of the host part of the
                 # address spaces contains the same numeric value for all
@@ -121,22 +130,20 @@ def do_checks(srcdir):
                 lastbytes.add(int(ip) % (1 << matchbits))
 
             if len(lastbytes) != 1:
-                errcnt += 1
-                error("Last part of BGP addresses differs: " +
-                      "%s (%s)" % (lastbytes, community))
+                ValidationWarning(community,
+                                  "Last part of BGP addresses differs: %s" %
+                                  lastbytes)
 
         if 'networks' in data:
             for family in ('IPv4', 'IPv6'):
                 if family.lower() in data['networks']:
                     for net in data['networks'][family.lower()]:
-                        errcnt += check_net(family,
-                                            net,
-                                            networks[family],
-                                            community)
+                        check_net(family, net, networks[family], community)
 
-    print("%d error(s)" % errcnt)
+    print("%d error(s), %d warning(s)" %
+          (ValidationError.counter, ValidationWarning.counter))
 
-    return 0 if errcnt == 0 else 1
+    return 0 if ValidationError.counter == 0 else 1
 
 if __name__ == "__main__":
     parser = OptionParser()

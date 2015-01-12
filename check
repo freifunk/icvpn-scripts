@@ -64,7 +64,10 @@ def do_checks(srcdir):
     asns = dict()
     bgp_gw = dict()
     bgp_gw_ip = dict()
-    networks = {'IPv4': dict(), 'IPv6': dict()}
+    networks = {
+        'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
+        'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
+    }
     errcnt = 0
 
     def filereader_error_handler(community):

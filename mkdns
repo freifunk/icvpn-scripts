@@ -7,12 +7,14 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 
+
 class DnsmasqFormatter(Formatter):
     "Formatter for dnsmasq"
     def add_data(self, domains, servers):
         for domain in domains:
             for server in servers:
                 self.config.append("server=/%s/%s" % (domain, server))
+
 
 class BindFormatter(Formatter):
     "Formatter for bind9 (>=9.8) using type static-stub"
@@ -24,6 +26,7 @@ class BindFormatter(Formatter):
                     server-addresses { %s; };
                 };
             """ % (domain, "; ".join(servers))).lstrip())
+
 
 class BindForwardFormatter(Formatter):
     "Formatter for bind9 using type forward"
@@ -37,12 +40,14 @@ class BindForwardFormatter(Formatter):
                 };
             """ % (domain, "; ".join(servers))).lstrip())
 
+
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     """
-    Generates a configuration using all files in srcdir (non-recursively)
-    excluding communities from 'exclude'.
+    Generates a configuration using all files in srcdir
+    (non-recursively) excluding communities from 'exclude'.
 
-    The files are read in lexicographic order to produce deterministic results.
+    The files are read in lexicographic order to produce deterministic
+    results.
     """
     formatter = fmtclass()
     for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
@@ -61,7 +66,8 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
 
                 formatter.add_comment("\n%s\n" % fname)
 
-                servers = filter(lambda d: all(f(d) for f in filters), data['nameservers'])
+                servers = filter(lambda d: all(f(d) for f in filters),
+                                 data['nameservers'])
 
                 servers = list(servers)
 
@@ -93,19 +99,29 @@ if __name__ == "__main__":
     }
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
-        help="Create config in format FMT. Possible values: %s. Default: dnsmasq" % ", ".join(formatters.keys()), metavar="FMT",
-        choices=list(formatters.keys()),
-        default="dnsmasq")
+                      help="""Create config in format FMT.
+                              Possible values: %s. Default: dnsmasq""" %
+                           ", ".join(formatters.keys()),
+                      metavar="FMT",
+                      choices=list(formatters.keys()),
+                      default="dnsmasq")
     parser.add_option("-s", "--sourcedir", dest="src",
-        help="Use files in DIR as input files. Default: data/", metavar="DIR",
-        default="data")
+                      help="Use files in DIR as input files. Default: data/",
+                      metavar="DIR",
+                      default="data")
     parser.add_option("-x", "--exclude", dest="exclude", action="append",
-        help="Exclude COMMUNITY (may be repeated)", metavar="COMMUNITY",
-        default=[])
+                      help="Exclude COMMUNITY (may be repeated)",
+                      metavar="COMMUNITY",
+                      default=[])
     parser.add_option("--filter", dest="filter",
-        help="Only include certain servers. Possible choices: %s" % ", ".join(filters.keys()),
-        choices=list(filters.keys()))
+                      help="""Only include certain servers.
+                              Possible choices: %s""" %
+                           ", ".join(filters.keys()),
+                      choices=list(filters.keys()))
 
     (options, args) = parser.parse_args()
 
-    create_config(options.src, formatters[options.fmt], set(options.exclude), [filters[options.filter]] if options.filter else [])
+    create_config(options.src,
+                  formatters[options.fmt],
+                  set(options.exclude),
+                  [filters[options.filter]] if options.filter else [])

@@ -3,11 +3,17 @@
 import os
 import sys
 import yaml
-from ipaddress import ip_address, ip_network
+import ipaddress
 from optparse import OptionParser
 
 def error(*arg):
     print(*arg, file=sys.stderr)
+
+def ip_family_address(family, address):
+    return getattr(ipaddress, family[:2].upper() + family[2:] + "Address")(address)
+
+def ip_family_network(family, network):
+    return getattr(ipaddress, family[:2].upper() + family[2:] + "Network")(network)
 
 def check_dupe(name, v, d, community):
     errcnt = 0
@@ -24,13 +30,19 @@ def check_dupe(name, v, d, community):
 def check_net(family, net, nets, community):
     errcnt = 0
 
-    for other in nets:
-        if other.overlaps(net):
-            errcnt += 1
-            error("%s Network overlap: %s (%s), %s (%s)" % (family, community, net, nets[other], other))
+    try:
+        net = ip_family_network(family, net)
+    except ValueError:
+        errcnt += 1
+        error("Not an %s network: %s (%s)" % (family, net, community))
+    else:
+        for other in nets:
+            if other.overlaps(net):
+                errcnt += 1
+                error("%s Network overlap: %s (%s), %s (%s)" % (family, community, net, nets[other], other))
 
-    if errcnt == 0:
-        nets[net] = community
+        if errcnt == 0:
+            nets[net] = community
 
     return errcnt
 
@@ -42,8 +54,7 @@ def do_checks(srcdir):
     asns = dict()
     bgp_gw = dict()
     bgp_gw_ip = dict()
-    v6_nets = dict()
-    v4_nets = dict()
+    networks = {'IPv4': dict(), 'IPv6': dict()}
     errcnt = 0
 
     for fname in sorted(list(set(os.listdir(srcdir)))):
@@ -66,21 +77,20 @@ def do_checks(srcdir):
                 if 'bgp' in data:
                     for bgp in data['bgp']:
                         errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
-                        
+
                         for ipclass in data['bgp'][bgp]:
-                            ip = ip_address(data['bgp'][bgp][ipclass])
-                            errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+                            try:
+                                ip = ip_family_address(ipclass, data['bgp'][bgp][ipclass])
+                                errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+                            except ValueError:
+                                errcnt += 1
+                                error("Not an %s BGP address: %s (%s)" % (ipclass, data['bgp'][bgp][ipclass], community))
 
                 if 'networks' in data:
-                    if 'ipv6' in data['networks']:
-                        for net in data['networks']['ipv6']:
-                            net = ip_network(net)
-                            errcnt += check_net("IPv6", net, v6_nets, community)
-
-                    if 'ipv4' in data['networks']:
-                        for net in data['networks']['ipv4']:
-                            net = ip_network(net)
-                            errcnt += check_net("IPv4", net, v4_nets, community)
+                    for family in ('IPv4', 'IPv6'):
+                        if family.lower() in data['networks']:
+                            for net in data['networks'][family.lower()]:
+                                errcnt += check_net(family, net, networks[family], community)
 
     print("%d error(s)" % errcnt)
 

@@ -6,26 +6,29 @@ import yaml
 import ipaddress
 from optparse import OptionParser
 
+
 def error(*arg):
     print(*arg, file=sys.stderr)
 
+
 def ip_family_address(family, address):
-    return getattr(ipaddress, family[:2].upper() + family[2:] + "Address")(address)
+    obj = getattr(ipaddress, family[:2].upper() + family[2:] + "Address")
+    return obj(address)
+
 
 def ip_family_network(family, network):
-    return getattr(ipaddress, family[:2].upper() + family[2:] + "Network")(network)
+    obj = getattr(ipaddress, family[:2].upper() + family[2:] + "Network")
+    return obj(network)
+
 
 def check_dupe(name, v, d, community):
-    errcnt = 0
-
     if v in d:
-        errcnt += 1
         error("Duplicate %s (%s):" % (name, v), d[v], community)
-
-    if errcnt == 0:
+        return 1
+    else:
         d[v] = community
+        return 0
 
-    return errcnt
 
 def check_net(family, net, nets, community):
     errcnt = 0
@@ -39,12 +42,14 @@ def check_net(family, net, nets, community):
         for other in nets:
             if other.overlaps(net):
                 errcnt += 1
-                error("%s Network overlap: %s (%s), %s (%s)" % (family, community, net, nets[other], other))
+                error("%s Network overlap: %s (%s), %s (%s)" %
+                      (family, community, net, nets[other], other))
 
         if errcnt == 0:
             nets[net] = community
 
     return errcnt
+
 
 def do_checks(srcdir):
     """
@@ -65,32 +70,47 @@ def do_checks(srcdir):
             continue
 
         fpath = os.path.join(srcdir, fname)
-        if os.path.isfile(fpath):
-            with open(fpath) as f:
+        if not os.path.isfile(fpath):
+            errcnt += 1
+            error("Not a regular file: %s" % fname)
+            continue
+
+        with open(fpath) as f:
+            try:
                 data = yaml.load(f)
-                community = fname
-                print("Checking", community)
+            except yaml.scanner.ScannerError:
+                errcnt += 1
+                error("Invalid YAML: %s" % fname)
+                continue
 
-                if 'asn' in data:
-                    errcnt += check_dupe("ASN", data['asn'], asns, community)
+        community = fname
+        print("Checking", community)
 
-                if 'bgp' in data:
-                    for bgp in data['bgp']:
-                        errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
+        if 'asn' in data:
+            errcnt += check_dupe("ASN", data['asn'], asns, community)
 
-                        for ipclass in data['bgp'][bgp]:
-                            try:
-                                ip = ip_family_address(ipclass, data['bgp'][bgp][ipclass])
-                                errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
-                            except ValueError:
-                                errcnt += 1
-                                error("Not an %s BGP address: %s (%s)" % (ipclass, data['bgp'][bgp][ipclass], community))
+        for bgp in data.get('bgp', []):
+            errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
 
-                if 'networks' in data:
-                    for family in ('IPv4', 'IPv6'):
-                        if family.lower() in data['networks']:
-                            for net in data['networks'][family.lower()]:
-                                errcnt += check_net(family, net, networks[family], community)
+            for ipclass in data['bgp'][bgp]:
+                try:
+                    ip = ip_family_address(ipclass,
+                                           data['bgp'][bgp][ipclass])
+                except ValueError:
+                    errcnt += 1
+                    error("Not an %s BGP address: %s (%s)" %
+                          (ipclass, data['bgp'][bgp][ipclass], community))
+                else:
+                    errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+
+        if 'networks' in data:
+            for family in ('IPv4', 'IPv6'):
+                if family.lower() in data['networks']:
+                    for net in data['networks'][family.lower()]:
+                        errcnt += check_net(family,
+                                            net,
+                                            networks[family],
+                                            community)
 
     print("%d error(s)" % errcnt)
 
@@ -99,11 +119,12 @@ def do_checks(srcdir):
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--sourcedir", dest="src",
-        help="Use files in DIR as input files. Default: data/", metavar="DIR",
-        default="data")
+                      help="Use files in DIR as input files. Default: data/",
+                      metavar="DIR",
+                      default="data")
 
     (options, args) = parser.parse_args()
 
     ret = do_checks(options.src)
-    
+
     sys.exit(ret)

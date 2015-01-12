@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import os
 import sys
-import yaml
 import ipaddress
 from optparse import OptionParser
+from filereader import get_communities_data
 
 
 def error(*arg):
@@ -62,28 +61,12 @@ def do_checks(srcdir):
     networks = {'IPv4': dict(), 'IPv6': dict()}
     errcnt = 0
 
-    for fname in sorted(list(set(os.listdir(srcdir)))):
-        if fname.startswith("."):
-            continue
+    def filereader_error_handler(community):
+        error("Invalid YAML: %s" % community)
+        errcnt += 1
 
-        if fname.startswith("README"):
-            continue
-
-        fpath = os.path.join(srcdir, fname)
-        if not os.path.isfile(fpath):
-            errcnt += 1
-            error("Not a regular file: %s" % fname)
-            continue
-
-        with open(fpath) as f:
-            try:
-                data = yaml.load(f)
-            except yaml.scanner.ScannerError:
-                errcnt += 1
-                error("Invalid YAML: %s" % fname)
-                continue
-
-        community = fname
+    for community, data in get_communities_data(srcdir, [],
+                                                filereader_error_handler):
         print("Checking", community)
 
         if 'asn' in data:

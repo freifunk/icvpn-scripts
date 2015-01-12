@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
-import os
-import yaml
-from collections import defaultdict
 from textwrap import dedent
 from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
+from filereader import get_communities_data
 
 
 class SmokePingFormatter(Formatter):
@@ -41,31 +39,22 @@ def create_config(srcdir, exclude, fmtclass):
     """
     formatter = fmtclass()
 
-    for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
-        if fname.startswith("."):
+    for community, data in get_communities_data(srcdir, exclude):
+        try:
+            bgp = data["bgp"]
+        except (TypeError, KeyError):
             continue
 
-        if fname.startswith("README"):
-            continue
+        formatter.add_section(community)
 
-        fpath = os.path.join(srcdir, fname)
-        if os.path.isfile(fpath):
-            formatter.add_section(fname)
-            with open(fpath) as f:
-                data = yaml.load(f)
-                community = fname
-
-                if 'bgp' not in data:
-                    continue
-
-                for host in sorted(data['bgp'].keys()):
-                    d = data['bgp'][host]
-                    if 'ipv4' in d:
-                        peer = d['ipv4']
-                        formatter.add_data("ipv4-"+host, peer, 'FPing')
-                    if 'ipv6' in d:
-                        peer = d['ipv6']
-                        formatter.add_data("ipv6-"+host, peer, 'FPing6')
+        for host in sorted(bgp.keys()):
+            d = bgp[host]
+            if 'ipv4' in d:
+                peer = d['ipv4']
+                formatter.add_data("ipv4-"+host, peer, 'FPing')
+            if 'ipv6' in d:
+                peer = d['ipv6']
+                formatter.add_data("ipv6-"+host, peer, 'FPing6')
 
     print(formatter.finalize())
 

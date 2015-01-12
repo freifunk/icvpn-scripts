@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-import os
-import yaml
 from textwrap import dedent
 from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
+from filereader import get_communities_data
 
 
 class DnsmasqFormatter(Formatter):
@@ -50,33 +49,24 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     results.
     """
     formatter = fmtclass()
-    for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
-        if fname.startswith("."):
+    for community, data in get_communities_data(srcdir, exclude):
+        try:
+            domains = data['domains']
+            nameservers = data['nameservers']
+        except (TypeError, KeyError):
             continue
 
-        if fname.startswith("README"):
-            continue
+        formatter.add_comment("\n%s\n" % community)
 
-        fpath = os.path.join(srcdir, fname)
-        if os.path.isfile(fpath):
-            with open(fpath) as f:
-                data = yaml.load(f)
-                if not ('domains' in data and 'nameservers' in data):
-                    continue
+        servers = filter(lambda d: all(f(d) for f in filters), nameservers)
+        servers = list(servers)
 
-                formatter.add_comment("\n%s\n" % fname)
-
-                servers = filter(lambda d: all(f(d) for f in filters),
-                                 data['nameservers'])
-
-                servers = list(servers)
-
-            if len(data['domains']) == 0:
-                formatter.add_comment("No valid domains found")
-            elif len(servers) == 0:
-                formatter.add_comment("No valid servers found")
-            else:
-                formatter.add_data(data['domains'], servers)
+        if len(domains) == 0:
+            formatter.add_comment("No valid domains found")
+        elif len(servers) == 0:
+            formatter.add_comment("No valid servers found")
+        else:
+            formatter.add_data(domains, servers)
 
     print(formatter.finalize())
 

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-import os
-import yaml
 from collections import defaultdict
 from textwrap import dedent
 from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
+from filereader import get_communities_data
 
 
 class BirdFormatter(Formatter):
@@ -46,31 +45,22 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
     template = defaultdict(lambda: defaulttemplate)
     template.update(dict(map(lambda s: s.split(":"), templates)))
 
-    for fname in sorted(list(set(os.listdir(srcdir)) - set(exclude))):
-        if fname.startswith("."):
+    for community, data in get_communities_data(srcdir, exclude):
+        try:
+            bgp = data["bgp"]
+            asn = data["asn"]
+        except (TypeError, KeyError):
             continue
 
-        if fname.startswith("README"):
-            continue
+        for host in sorted(bgp.keys()):
+            d = bgp[host]
+            if family not in d:
+                continue
 
-        fpath = os.path.join(srcdir, fname)
-        if os.path.isfile(fpath):
-            with open(fpath) as f:
-                data = yaml.load(f)
-                community = fname
+            peer = d[family]
 
-                if 'bgp' not in data:
-                    continue
-
-                for host in sorted(data['bgp'].keys()):
-                    d = data['bgp'][host]
-                    if family not in d:
-                        continue
-
-                    peer = d[family]
-
-                    formatter.add_data(data['asn'], prefix + host,
-                                       template[community], peer)
+            formatter.add_data(asn, prefix + host,
+                               template[community], peer)
 
     print(formatter.finalize())
 

@@ -6,17 +6,23 @@ from optparse import OptionParser
 from filereader import get_communities_data
 
 
+ICVPN_NETWORKS = {
+    "IPv4": ipaddress.IPv4Network("10.207.0.0/16"),
+    "IPv6": ipaddress.IPv6Network("fec0::a:cf:0:0/96"),
+}
+
+
 def error(*arg):
     print(*arg, file=sys.stderr)
 
 
 def ip_family_address(family, address):
-    obj = getattr(ipaddress, family[:2].upper() + family[2:] + "Address")
+    obj = getattr(ipaddress, family + "Address")
     return obj(address)
 
 
 def ip_family_network(family, network):
-    obj = getattr(ipaddress, family[:2].upper() + family[2:] + "Network")
+    obj = getattr(ipaddress, family + "Network")
     return obj(network)
 
 
@@ -76,14 +82,19 @@ def do_checks(srcdir):
             errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
 
             for ipclass in data['bgp'][bgp]:
+                upipclass = ipclass[:2].upper() + ipclass[2:]
                 try:
-                    ip = ip_family_address(ipclass,
+                    ip = ip_family_address(upipclass,
                                            data['bgp'][bgp][ipclass])
                 except ValueError:
                     errcnt += 1
                     error("Not an %s BGP address: %s (%s)" %
-                          (ipclass, data['bgp'][bgp][ipclass], community))
+                          (upipclass, data['bgp'][bgp][ipclass], community))
                 else:
+                    if ip not in ICVPN_NETWORKS[upipclass]:
+                        errcnt += 1
+                        error("%s BGP address in wrong subnet: %s (%s)" %
+                              (upipclass, data['bgp'][bgp][ipclass], community))
                     errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
 
         if 'networks' in data:

@@ -133,6 +133,10 @@ as [its Travis CI hook](https://travis-ci.org/freifunk/icvpn-meta/). You can
 use it to test your own submission to that repository beforehand, but it isn't
 of much use otherwise.
 
+Note that `check` requires Python **3.3**, for it provides an excellent
+[IPv4/IPv6 manipulation
+library](https://docs.python.org/3.3/library/ipaddress.html)
+
 Contributing
 ------------
 You have an idea how to use the data in the [icvpn-meta repository]

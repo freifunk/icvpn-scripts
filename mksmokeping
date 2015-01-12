@@ -8,34 +8,36 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 
+
 class SmokePingFormatter(Formatter):
     "Formatter for SmokePing (http://oss.oetiker.ch/smokeping/)"
     def add_data(self, name, ip, probe):
-      self.config.append(dedent("""
-        ++ %(name)s
-        menu = %(name)s
-        title = %(name)s
-        probe = %(probe)s
-        host = %(ip)s
-        #alerts = someloss
+        self.config.append(dedent("""
+            ++ %(name)s
+            menu = %(name)s
+            title = %(name)s
+            probe = %(probe)s
+            host = %(ip)s
+            #alerts = someloss
 
-        """ % {"name": name, "ip":ip, "probe":probe}))
+            """ % {"name": name, "ip": ip, "probe": probe}))
 
     def add_section(self, name):
-      self.config.append(dedent("""
-        + %(name)s
-        menu = %(name)s
-        title = %(name)s
+        self.config.append(dedent("""
+            + %(name)s
+            menu = %(name)s
+            title = %(name)s
 
-        """ % {"name": name}))
+            """ % {"name": name}))
 
 
 def create_config(srcdir, exclude, fmtclass):
     """
-    Generates a configuration using all files in srcdir (non-recursively)
-    excluding communities from 'exclude'.
+    Generates a configuration using all files in srcdir
+    (non-recursively) excluding communities from 'exclude'.
 
-    The files are read in lexicographic order to produce deterministic results.
+    The files are read in lexicographic order to produce deterministic
+    results.
     """
     formatter = fmtclass()
 
@@ -53,14 +55,14 @@ def create_config(srcdir, exclude, fmtclass):
                 data = yaml.load(f)
                 community = fname
 
-                if not 'bgp' in data:
+                if 'bgp' not in data:
                     continue
 
                 for host in sorted(data['bgp'].keys()):
                     d = data['bgp'][host]
                     if 'ipv4' in d:
                         peer = d['ipv4']
-                        formatter.add_data("ipv4-"+host, peer,'FPing')
+                        formatter.add_data("ipv4-"+host, peer, 'FPing')
                     if 'ipv6' in d:
                         peer = d['ipv6']
                         formatter.add_data("ipv6-"+host, peer, 'FPing6')
@@ -74,16 +76,22 @@ if __name__ == "__main__":
 
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
-        help="Create config in format FMT. Possible values: %s. Default: SmokePing" % ", ".join(formatters.keys()), metavar="FMT",
-        choices=list(formatters.keys()),
-        default="SmokePing")
+                      help="""Create config in format FMT.
+                              Possible values: %s. Default: SmokePing""" %
+                           ", ".join(formatters.keys()),
+                      metavar="FMT",
+                      choices=list(formatters.keys()),
+                      default="SmokePing")
     parser.add_option("-s", "--sourcedir", dest="src",
-        help="Use files in DIR as input files. Default: data/", metavar="DIR",
-        default="data")
+                      help="""Use files in DIR as input files.
+                              Default: data/""",
+                      metavar="DIR",
+                      default="data")
     parser.add_option("-x", "--exclude", dest="exclude", action="append",
-        help="Exclude the comma-separated list of COMMUNITIES", metavar="COMMUNITIES",
-        default=[])
+                      help="Exclude the comma-separated list of COMMUNITIES",
+                      metavar="COMMUNITIES",
+                      default=[])
 
     (options, args) = parser.parse_args()
 
-    create_config(options.src, set(options.exclude),formatters[options.fmt])
+    create_config(options.src, set(options.exclude), formatters[options.fmt])

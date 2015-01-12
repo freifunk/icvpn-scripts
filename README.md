@@ -1,5 +1,10 @@
 icvpn-scripts
 =============
+[![Build Status][Travis image]][Travis]
+
+[Travis image]: https://travis-ci.org/freifunk/icvpn-scripts.svg
+[Travis]: https://travis-ci.org/freifunk/icvpn-scripts
+
 This is a collection of scripts for working with the [icvpn-meta repository].
 While the actual data about the communities' networks and stuff goes there,
 these scripts use that data to do something with it.

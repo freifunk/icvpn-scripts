@@ -8,14 +8,16 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 
+
 class BirdFormatter(Formatter):
     "Formatter for bind9 using type forward"
     def add_data(self, asn, name, template, peer):
-      self.config.append(dedent("""
-        protocol bgp %s from %s {
-            neighbor %s as %s;
-        }
-        """ % (name, template, peer, asn)))
+        self.config.append(dedent("""
+            protocol bgp %s from %s {
+                neighbor %s as %s;
+            }
+            """ % (name, template, peer, asn)))
+
 
 class QuaggaFormatter(Formatter):
     "Formatter for quagga"
@@ -30,12 +32,15 @@ class QuaggaFormatter(Formatter):
             neighbor %(peer)s peer-group %(template)s
         """ % {"peer": peer, "asn": asn, "name": name, "template": template}))
 
-def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, fmtclass):
-    """
-    Generates a configuration using all files in srcdir (non-recursively)
-    excluding communities from 'exclude'.
 
-    The files are read in lexicographic order to produce deterministic results.
+def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
+                  fmtclass):
+    """
+    Generates a configuration using all files in srcdir
+    (non-recursively) excluding communities from 'exclude'.
+
+    The files are read in lexicographic order to produce deterministic
+    results.
     """
     formatter = fmtclass()
     template = defaultdict(lambda: defaulttemplate)
@@ -54,20 +59,21 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family, f
                 data = yaml.load(f)
                 community = fname
 
-                if not 'bgp' in data:
+                if 'bgp' not in data:
                     continue
 
                 for host in sorted(data['bgp'].keys()):
                     d = data['bgp'][host]
-                    if not family in d:
+                    if family not in d:
                         continue
 
                     peer = d[family]
 
                     formatter.add_data(data['asn'], prefix + host,
-                            template[community], peer)
+                                       template[community], peer)
 
     print(formatter.finalize())
+
 
 if __name__ == "__main__":
     formatters = {
@@ -77,32 +83,41 @@ if __name__ == "__main__":
 
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
-        help="Create config in format FMT. Possible values: %s. Default: dnsmasq" % ", ".join(formatters.keys()), metavar="FMT",
-        choices=list(formatters.keys()),
-        default="bird")
+                      help="""Create config in format FMT.
+                              Possible values: %s. Default: dnsmasq""" %
+                           ", ".join(formatters.keys()),
+                      metavar="FMT",
+                      choices=list(formatters.keys()),
+                      default="bird")
     parser.add_option("-4", dest="family", action="store_const", const="ipv4",
-        help="Generate IPv4 config")
+                      help="Generate IPv4 config")
     parser.add_option("-6", dest="family", action="store_const", const="ipv6",
-        help="Generate IPv6 config")
+                      help="Generate IPv6 config")
     parser.add_option("-s", "--sourcedir", dest="src",
-        help="Use files in DIR as input files. Default: data/", metavar="DIR",
-        default="data")
+                      help="""Use files in DIR as input files.
+                              Default: data/""", metavar="DIR",
+                      default="data")
     parser.add_option("-x", "--exclude", dest="exclude", action="append",
-        help="Exclude the comma-separated list of COMMUNITIES", metavar="COMMUNITIES",
-        default=[])
+                      help="Exclude the comma-separated list of COMMUNITIES",
+                      metavar="COMMUNITIES",
+                      default=[])
     parser.add_option("-p", "--prefix", dest="prefix",
-        help="Prefix, e.g. bgp_icvpn_", metavar="PREFIX",
-        default="")
+                      help="Prefix, e.g. bgp_icvpn_",
+                      metavar="PREFIX",
+                      default="")
     parser.add_option("-d", "--default", dest="defaulttemplate",
-        help="Default template/peer-group to use", metavar="TEMPLATE",
-        default=None)
+                      help="Default template/peer-group to use",
+                      metavar="TEMPLATE",
+                      default=None)
     parser.add_option("-t", "--template", dest="templates", action="append",
-        help="Use different template/peer-group for some communities", metavar="COMMUNITY:TEMPLATE",
-        default=[])
+                      help="Use different template/peer-group for some " +
+                            "communities",
+                      metavar="COMMUNITY:TEMPLATE",
+                      default=[])
     parser.set_defaults(family="ipv6")
 
     (options, args) = parser.parse_args()
 
     create_config(options.src, set(options.exclude), options.prefix,
-            options.defaulttemplate, options.templates,
-            options.family, formatters[options.fmt])
+                  options.defaulttemplate, options.templates,
+                  options.family, formatters[options.fmt])

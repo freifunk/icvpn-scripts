@@ -3,6 +3,7 @@
 import sys
 import ipaddress
 from optparse import OptionParser
+from math import floor
 from filereader import get_communities_data
 
 
@@ -84,6 +85,8 @@ def do_checks(srcdir):
         for bgp in data.get('bgp', []):
             errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
 
+            lastbytes = set()
+
             for ipclass in data['bgp'][bgp]:
                 upipclass = ipclass[:2].upper() + ipclass[2:]
                 try:
@@ -93,12 +96,34 @@ def do_checks(srcdir):
                     errcnt += 1
                     error("Not an %s BGP address: %s (%s)" %
                           (upipclass, data['bgp'][bgp][ipclass], community))
-                else:
-                    if ip not in ICVPN_NETWORKS[upipclass]:
-                        errcnt += 1
-                        error("%s BGP address in wrong subnet: %s (%s)" %
-                              (upipclass, data['bgp'][bgp][ipclass], community))
-                    errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+                    continue
+
+                errcnt += check_dupe("BGP IP", ip, bgp_gw_ip, community)
+                try:
+                    network = ICVPN_NETWORKS[upipclass]
+                except KeyError:
+                    errcnt += 1
+                    error("Unknown BGP protocol class: %s (%s)" %
+                          (upipclass, community))
+                    continue
+
+                if ip not in network:
+                    errcnt += 1
+                    error("%s BGP address in wrong subnet: %s (%s)" %
+                          (upipclass, data['bgp'][bgp][ipclass], community))
+
+                # we want that the last half of the host part of the
+                # address spaces contains the same numeric value for all
+                # protocol version
+                # i.e. last 8 bits of IPv4 = last 16 bits of IPv6
+                # i.e. IPv6 has to be padded with 8 zeroes
+                matchbits = floor((ip.max_prefixlen - network.prefixlen)/2)
+                lastbytes.add(int(ip) % (1 << matchbits))
+
+            if len(lastbytes) != 1:
+                errcnt += 1
+                error("Last part of BGP addresses differs: " +
+                      "%s (%s)" % (lastbytes, community))
 
         if 'networks' in data:
             for family in ('IPv4', 'IPv6'):

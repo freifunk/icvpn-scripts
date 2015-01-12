@@ -4,11 +4,7 @@ import os
 import sys
 import yaml
 from ipaddress import ip_address, ip_network
-from collections import defaultdict
-from textwrap import dedent
 from optparse import OptionParser
-from socket import AF_INET, AF_INET6, inet_pton
-from formatter import Formatter
 
 def error(*arg):
     print(*arg, file=sys.stderr)

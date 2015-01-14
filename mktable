@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import yaml
+from prettytable import PrettyTable
+from ipaddress import ip_address, ip_network, IPv6Address
+from collections import defaultdict
+from textwrap import dedent
+from optparse import OptionParser
+from socket import AF_INET, AF_INET6, inet_pton
+from formatter import Formatter
+
+def mknettable(family, data):
+    x = PrettyTable(["Network", "Community", "AS"])
+    x.align = "l"
+    nets = list()
+    for (c, d) in data:
+        if "networks" not in d:
+            continue
+
+        if family not in d["networks"]:
+            continue
+
+        for net in d["networks"][family]:
+            nets.append((ip_network(net), c,
+                        d['asn'] if 'asn' in d else "(n/a)"))
+
+    for net in sorted(nets, key=lambda x: x[0]):
+        x.add_row(net)
+
+    return x
+
+
+def mktable(srcdir):
+    data = list()
+    for fname in sorted(list(set(os.listdir(srcdir)))):
+        if fname.startswith("."):
+            continue
+
+        if fname.startswith("README"):
+            continue
+
+        fpath = os.path.join(srcdir, fname)
+        if os.path.isfile(fpath):
+            with open(fpath) as f:
+                data.append((fname, yaml.load(f)))
+
+    x = PrettyTable(["AS", "Community", "Tech-C"])
+    x.align = "l"
+    x.align["AS"] = "r"
+    for (c, d) in sorted(data, key=lambda x:
+                         x[1]['asn'] if 'asn' in x[1] else 0):
+        asn = d['asn'] if 'asn' in d else "(n/a)"
+        techc = ", ".join(d['tech-c']) if 'tech-c' in d else "(n/a)"
+        x.add_row([asn, c, techc])
+    print(str(x) + "\n")
+
+    print(str(mknettable("ipv6", data)) + "\n")
+    print(str(mknettable("ipv4", data)) + "\n")
+
+    x = PrettyTable(["IPv6", "IPv4", "Name", "Community"])
+    x.align = "l"
+    bgp = list()
+    for (c, d) in data:
+        if "bgp" not in d:
+            continue
+
+        for (name, host) in d["bgp"].items():
+            v4 = ip_address(host["ipv4"]) if "ipv4" in host else "(n/a)"
+            v6 = ip_address(host["ipv6"]) if "ipv6" in host else "(n/a)"
+            bgp.append((v6, v4, name, c))
+
+    for e in sorted(bgp, key=lambda x:
+                    x[0] if isinstance(x[0], IPv6Address)
+                    else ip_address("::")):
+        x.add_row(e)
+
+    print(str(x) + "\n")
+
+
+if __name__ == "__main__":
+    parser = OptionParser()
+    parser.add_option("-s", "--sourcedir", dest="src",
+                      help="Use files in DIR as input files. Default: data/",
+                      metavar="DIR", default="data")
+
+    (options, args) = parser.parse_args()
+
+    mktable(options.src)

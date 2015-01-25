@@ -44,17 +44,14 @@ class BindForwardFormatter(Formatter):
 class UnboundFormatter(Formatter):
     "Formatter for Unbound using forward"
     def add_data(self, domains, servers):
-        forwardAddrEntrys = ["\tforward-addr: %s" % srv for srv in servers]
+        forwardAddrEntrys = "\n".join(["\tforward-addr: %s" % srv for srv in servers])
         for domain in domains:
-            serverEntrys = ["Server:", "\tdomain-insecure: %s" % domain]
+            serverEntry = "Server:\n\tdomain-insecure: %s" % domain
             if search("\.arpa$", domain):
-                serverEntrys.append("\tlocal-zone: \"%s\" nodefault" % domain)
-            self.config.append(dedent("\n".join(serverEntrys)))
-            forwardEntry = ["forward-zone:"]
-            forwardEntry.append("\tname: \"%s\"" % domain)
-            forwardEntry += forwardAddrEntrys
-            forwardEntry.append("")
-            self.config.append(dedent("\n".join(forwardEntry)))
+                serverEntry += "\n\tlocal-zone: \"%s\" nodefault" % domain
+            self.config.append(dedent(serverEntry))
+            forwardEntry = "forward-zone:\n\tname: \"%s\"\n%s" % (domain, forwardAddrEntrys)
+            self.config.append(dedent(forwardEntry))
 
 
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):

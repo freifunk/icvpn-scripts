@@ -5,6 +5,7 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 from filereader import get_communities_data
+from re import search
 
 
 class DnsmasqFormatter(Formatter):
@@ -38,6 +39,23 @@ class BindForwardFormatter(Formatter):
                     forward only;
                 };
             """ % (domain, "; ".join(servers))).lstrip())
+
+
+class UnboundFormatter(Formatter):
+    "Formatter for Unbound using forward"
+    def add_data(self, domains, servers):
+        serverEntrys = []
+        forwardAddrEntrys = ["\tforward-addr: %s" % srv for srv in servers]
+        for domain in domains:
+            serverEntrys = ["Server:", "\tdomain-insecure: %s" % domain]
+            if search("\.arpa$", domain):
+                serverEntrys.append("\tlocal-zone: \"%s\" nodefault" % domain)
+            self.config.append(dedent("\n".join(serverEntrys)))
+            forwardEntry = ["forward-zone:"]
+            forwardEntry.append("\tname: \"%s\"" % domain)
+            forwardEntry += forwardAddrEntrys
+            forwardEntry.append("")
+            self.config.append(dedent("\n".join(forwardEntry)))
 
 
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
@@ -82,6 +100,7 @@ if __name__ == "__main__":
         "dnsmasq": DnsmasqFormatter,
         "bind": BindFormatter,
         "bind-forward": BindForwardFormatter,
+        "unbound": UnboundFormatter,
     }
     filters = {
         "v4": lambda value: try_inet_pton(AF_INET, value),

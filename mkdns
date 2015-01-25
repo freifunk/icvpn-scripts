@@ -44,7 +44,6 @@ class BindForwardFormatter(Formatter):
 class UnboundFormatter(Formatter):
     "Formatter for Unbound using forward"
     def add_data(self, domains, servers):
-        serverEntrys = []
         forwardAddrEntrys = ["\tforward-addr: %s" % srv for srv in servers]
         for domain in domains:
             serverEntrys = ["Server:", "\tdomain-insecure: %s" % domain]

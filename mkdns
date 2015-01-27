@@ -40,6 +40,19 @@ class BindForwardFormatter(Formatter):
             """ % (domain, "; ".join(servers))).lstrip())
 
 
+class UnboundFormatter(Formatter):
+    "Formatter for Unbound using forward"
+    def add_data(self, domains, servers):
+        forwardAddrEntrys = "\n".join(["\tforward-addr: %s" % srv for srv in servers])
+        for domain in domains:
+            serverEntry = "Server:\n\tdomain-insecure: %s" % domain
+            if domain.endswith(".arpa"):
+                serverEntry += "\n\tlocal-zone: \"%s\" nodefault" % domain
+            self.config.append(dedent(serverEntry))
+            forwardEntry = "forward-zone:\n\tname: \"%s\"\n%s" % (domain, forwardAddrEntrys)
+            self.config.append(dedent(forwardEntry))
+
+
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     """
     Generates a configuration using all files in srcdir
@@ -82,6 +95,7 @@ if __name__ == "__main__":
         "dnsmasq": DnsmasqFormatter,
         "bind": BindFormatter,
         "bind-forward": BindForwardFormatter,
+        "unbound": UnboundFormatter,
     }
     filters = {
         "v4": lambda value: try_inet_pton(AF_INET, value),

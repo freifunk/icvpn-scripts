@@ -90,8 +90,8 @@ Usage: mkdns [options]
 Options:
   -h, --help            show this help message and exit
   -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: bind, dnsmasq, bind-forward. Default:
-                        dnsmasq
+                        Possible values: bind, unbound, dnsmasq, bind-forward.
+                        Default: dnsmasq
   -s DIR, --sourcedir=DIR
                         Use files in DIR as input files. Default: data/
   -x COMMUNITY, --exclude=COMMUNITY

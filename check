@@ -1,16 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import ipaddress
 from optparse import OptionParser
 from math import floor
 from filereader import get_communities_data
-
+from urllib.request import urlopen
 
 ICVPN_NETWORKS = {
     "IPv4": ipaddress.IPv4Network("10.207.0.0/16"),
     "IPv6": ipaddress.IPv6Network("fec0::a:cf:0:0/96"),
 }
+
+TLD_LIST = 'http://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 
 
 def error(*arg):
@@ -57,6 +59,26 @@ def check_net(family, net, nets, community):
     return errcnt
 
 
+def check_domain(domain, tlds, community):
+    errcnt = 0
+    if domain.rsplit('.', 1)[-1].lower() in tlds:
+        errcnt += 1
+        error("TLD could be found in global dns: %s (%s)" %
+              (domain, community))
+
+    return errcnt
+
+
+def get_tlds(url):
+    tlds = list()
+    response = urlopen(url)
+    for line in response.readlines():
+        if line.startswith(b'#'):
+            continue
+        tlds.append(line.decode("utf-8").rstrip().lower())
+    return tlds
+
+
 def do_checks(srcdir):
     """
     Check files for sanity.
@@ -69,6 +91,9 @@ def do_checks(srcdir):
         'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
         'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
     }
+    tlds = get_tlds(TLD_LIST)
+    tlds.remove('arpa')
+
     errcnt = 0
 
     def filereader_error_handler(community):
@@ -133,6 +158,9 @@ def do_checks(srcdir):
                                             net,
                                             networks[family],
                                             community)
+
+        for domain in data.get('domains', []):
+            errcnt += check_domain(domain, tlds, community)
 
     print("%d error(s)" % errcnt)
 

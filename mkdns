@@ -5,7 +5,6 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 from filereader import get_communities_data
-from re import search
 
 
 class DnsmasqFormatter(Formatter):
@@ -47,7 +46,7 @@ class UnboundFormatter(Formatter):
         forwardAddrEntrys = "\n".join(["\tforward-addr: %s" % srv for srv in servers])
         for domain in domains:
             serverEntry = "Server:\n\tdomain-insecure: %s" % domain
-            if search("\.arpa$", domain):
+            if domain.endswith(".arpa"):
                 serverEntry += "\n\tlocal-zone: \"%s\" nodefault" % domain
             self.config.append(dedent(serverEntry))
             forwardEntry = "forward-zone:\n\tname: \"%s\"\n%s" % (domain, forwardAddrEntrys)

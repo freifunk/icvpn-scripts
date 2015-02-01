@@ -70,12 +70,12 @@ def check_domain(domain, tlds, community):
 
 
 def get_tlds(url):
-    tlds = list()
+    tlds = set()
     response = urlopen(url)
     for line in response.readlines():
         if line.startswith(b'#'):
             continue
-        tlds.append(line.decode("utf-8").rstrip().lower())
+        tlds.add(line.decode("utf-8").rstrip().lower())
     return tlds
 
 

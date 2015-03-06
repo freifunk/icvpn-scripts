@@ -2,13 +2,13 @@
 
 from textwrap import dedent
 from optparse import OptionParser
-from socket import AF_INET, AF_INET6, inet_pton
+from socket import AF_INET, AF_INET6, inet_pton, error as socket_error
 from formatter import Formatter
 from filereader import get_communities_data
 
 
 class DnsmasqFormatter(Formatter):
-    "Formatter for dnsmasq"
+    """Formatter for dnsmasq"""
     def add_data(self, domains, servers):
         for domain in domains:
             for server in servers:
@@ -16,7 +16,7 @@ class DnsmasqFormatter(Formatter):
 
 
 class BindFormatter(Formatter):
-    "Formatter for bind9 (>=9.8) using type static-stub"
+    """Formatter for bind9 (>=9.8) using type static-stub"""
     def add_data(self, domains, servers):
         for domain in domains:
             self.config.append(dedent("""
@@ -26,11 +26,11 @@ class BindFormatter(Formatter):
                     type static-stub;
                     server-addresses { %s; };
                 };
-            """ % (domain, "; ".join(servers))).lstrip())
+            """ % (domain, domain, "; ".join(servers))).lstrip())
 
 
 class BindForwardFormatter(Formatter):
-    "Formatter for bind9 using type forward"
+    """Formatter for bind9 using type forward"""
     def add_data(self, domains, servers):
         for domain in domains:
             self.config.append(dedent("""
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         try:
             inet_pton(af, ip)
             return True
-        except:
+        except socket_error:
             return False
 
     formatters = {

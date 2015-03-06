@@ -20,13 +20,11 @@ class BindFormatter(Formatter):
     def add_data(self, domains, servers):
         for domain in domains:
             self.config.append(dedent("""
-                server:
-                    %s
                 zone "%s" {
                     type static-stub;
                     server-addresses { %s; };
                 };
-            """ % (domain, domain, "; ".join(servers))).lstrip())
+            """ % (domain, "; ".join(servers))).lstrip())
 
 
 class BindForwardFormatter(Formatter):

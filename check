@@ -120,10 +120,12 @@ def do_checks(srcdir):
                 matchbits = floor((ip.max_prefixlen - network.prefixlen)/2)
                 lastbytes.add(int(ip) % (1 << matchbits))
 
+            """
             if len(lastbytes) != 1:
                 errcnt += 1
                 error("Last part of BGP addresses differs: " +
                       "%s (%s)" % (lastbytes, community))
+            """
 
         if 'networks' in data:
             for family in ('IPv4', 'IPv6'):

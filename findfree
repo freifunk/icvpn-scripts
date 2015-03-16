@@ -26,11 +26,11 @@ def find_transfer_ip(allocated):
             continue
 
         # create matching ipv6 address
-        ip6 = ip_address("fec0::a:cf:%X:%X" % (ip_addr.packed[2],
-                                               ip_addr.packed[3]))
+        ip6_addr = ip_address("fec0::a:cf:%X:%X" % (ip_addr.packed[2],
+                                                    ip_addr.packed[3]))
 
-        if ip6 not in allocated:
-            yield (ip_addr, ip6)
+        if ip6_addr not in allocated:
+            yield [str(ip_addr), str(ip6_addr)]
 
 
 def find_subnet(allocated, prefix_len):
@@ -55,7 +55,7 @@ def find_subnet(allocated, prefix_len):
         if is_colliding(option, allocated):
             continue
 
-        yield option
+        yield str(option)
 
 
 def find(srcdir, required_prefix_len, option_count):

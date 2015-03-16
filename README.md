@@ -71,6 +71,50 @@ Options:
 ```
 
 
+ROA (`mkroa`)
+-------------
+`mkroa` creates a Route Origin Authorization (ROA) table for a bgp server
+(currently only bird is supported). ROAs can be used in filters to link
+prefixes to ASNs. By that, announcements are validated with the data from
+the [icvpn-meta repository], so that prefixes are only imported if announced
+by the correct community.
+
+**Note** that this script does only output one ROA statement per prefix and
+ASN, so you have to surround the output yourself with the appropriate table
+statement, e.g. like `roa table icvpn_roa { include "roa.con?" }`.
+
+The ROA table can then be used in a filter
+```
+filter icvpn_in {
+  if roa_check(icvpn_roa, net, bgp_path.last) = ROA_INVALID then {
+    print "ROA check failed for ", net, " ASN ", bgp_path.last;
+    reject;
+  }
+  accept;
+}
+```
+which then can be used e.g. in a template `import filter icvpn_in;`.
+
+The output of `mkroa --help`:
+``` 
+Usage: mkroa [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -f FMT, --format=FMT  Create config in format FMT.
+                        Possible values: bird.
+  -4                    Generate IPv4 config
+  -6                    Generate IPv6 config
+  -s DIR, --sourcedir=DIR
+                        Use files in DIR as input files.
+                        Default: data/
+  -x COMMUNITIES, --exclude=COMMUNITIES
+                        Exclude the comma-separated list of COMMUNITIES
+  -m DEFAULT_MAX_PREFIXLEN, --max=DEFAULT_MAX_PREFIXLEN
+                        max prefix length to accept
+```
+
+
 DNS (`mkdns`)
 -------------
 `mkdns` generates configuration for DNS servers (currently bind and dnsmasq are

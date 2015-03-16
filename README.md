@@ -32,6 +32,35 @@ specify another location.
 On Debian `apt-get install python-yaml` should install all dependencies.
 
 
+Find Free Resources (`findfree`)
+--------------------------------
+`findfree` searches for free transfer ip and ip subnet allocations in the predefined
+network segments.
+
+**Note** that it is crucial to have an up to date [icvpn-meta repository] to
+ensure the utility outputs useful data.
+
+The output of `findfree --help`
+```
+usage: findfree [-h] [-s DIRECTORY] [-p PREFIX] [-c COUNT]
+
+Find free resources in the Freifunk ICVPN Universe
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s DIRECTORY, --source-dir DIRECTORY
+                        path to the local copy of the icvpn-metarepository
+                        (Default: ../icvpn-meta/)
+  -p PREFIX, --prefix-length PREFIX
+                        Required prefix length (Default: 16)
+  -c COUNT, --count COUNT
+                        The amount of options to show (Default: 5)
+
+Make sure your copy of icvpn-meta is up to date, to ensure this utility
+produces useful results.
+```
+
+
 BGP (`mkbgp`)
 -------------
 `mkbgp` generates the configuration for a BGP server (currently bird and quagga

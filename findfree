@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+findfree - find free resources in the icvpn meta universe
+"""
+import argparse
+import yaml
+from itertools import islice
+from ipaddress import ip_address, ip_network
+from filereader import get_communities_data
+
+TRANSFER_NET_IP4 = '10.207.0.0/16'
+TRANSFER_NET_IP6 = 'fec0::a:cf:0:0/96'
+FREIFUNK_NET_IP4 = '10.0.0.0/8'
+FREIFUNK_NET_IP6 = 'fd00::/8'
+
+
+def find_transfer_ip(allocated):
+    """
+    Find free transfer ip pairs (ipv4 & ipv6)
+
+    :param allocated: list of allocated transfer ipv4 and ipv6 addresses
+    :return: yield free transfer ip address pairs
+    """
+    for ip_addr in ip_network(TRANSFER_NET_IP4).hosts():
+        if ip_addr in allocated:
+            continue
+
+        # create matching ipv6 address
+        ip6 = ip_address("fec0::a:cf:%X:%X" % (ip_addr.packed[2],
+                                               ip_addr.packed[3]))
+
+        if ip6 not in allocated:
+            yield (ip_addr, ip6)
+
+
+def find_subnet(allocated, prefix_len):
+    """
+    Find free ipv4 subnet with the given prefix length
+    in the freifunk range (10.0.0.0/8)
+
+    :param allocated: list of allocated subnets
+    :param prefix_len: required prefix length
+    :return: yield free ipv4 subnets
+    """
+    def is_colliding(network, allocations):
+        """
+        Check if given network is colliding with an
+        already allocated networks
+        """
+        for allocation in allocations:
+            if network.overlaps(allocation):
+                return True
+
+    for option in ip_network(FREIFUNK_NET_IP4).subnets(new_prefix=prefix_len):
+        if is_colliding(option, allocated):
+            continue
+
+        yield option
+
+
+def find(srcdir, required_prefix_len, option_count):
+    """
+    Find and present free resources in the Freifunk ICVPN Universe
+    :param srcdir: path to icvpn-meta repository
+    :param required_prefix_len: required prefix lenght
+    :param option_count: amount of options to show
+    """
+    transfer_net_allocations = set()
+    freifunk_ip4_allocations = set()
+
+    for _, data in get_communities_data(srcdir, []):
+        try:
+            for transfer_ips in data['bgp'].values():
+                for transfer_ip in transfer_ips.values():
+                    transfer_net_allocations.add(ip_address(transfer_ip))
+        except KeyError:
+            pass
+
+        try:
+            for ip_subnets in data['networks'].values():
+                for ip_subnet in ip_subnets:
+                    freifunk_ip4_allocations.add(ip_network(ip_subnet))
+        except KeyError:
+            pass
+
+    def take(num, iterable):
+        """ Return first num items of the iterable as a list """
+        return list(islice(iterable, num))
+
+    store = {'transfer': take(option_count,
+                              find_transfer_ip(transfer_net_allocations)),
+             'subnets':  take(option_count,
+                              find_subnet(freifunk_ip4_allocations,
+                                          required_prefix_len))}
+
+    print(yaml.dump(store))
+
+
+if __name__ == "__main__":
+    PARSER = argparse.ArgumentParser(
+        description="Find free resources in the Freifunk ICVPN Universe",
+        epilog="Make sure your copy of icvpn-meta is up to date, to ensure "
+               "this utility produces useful results.")
+
+    PARSER.add_argument('-s', '--source-dir',
+                        metavar='DIRECTORY', dest='src',
+                        default='../icvpn-meta/',
+                        help="path to the local copy of the icvpn-meta"
+                             "repository (Default: ../icvpn-meta/)")
+    PARSER.add_argument('-p', '--prefix-length',
+                        type=int, default=16,
+                        metavar='PREFIX', dest='required_prefix_len',
+                        help="Required prefix length (Default: 16)")
+    PARSER.add_argument('-c', '--count',
+                        type=int, default=5,
+                        metavar='COUNT', dest='option_count',
+                        help="The amount of options to show (Default: 5)")
+
+    ARGS = PARSER.parse_args()
+
+    find(ARGS.src, ARGS.required_prefix_len, ARGS.option_count)

@@ -11,6 +11,7 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 
+
 def mknettable(family, data):
     x = PrettyTable(["Network", "Community", "AS"])
     x.align = "l"
@@ -82,8 +83,9 @@ def mktable(srcdir):
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--sourcedir", dest="src",
-                      help="Use files in DIR as input files. Default: data/",
-                      metavar="DIR", default="data")
+                      help="Use files in DIR as input files. Default: "
+                           "../icvpn-meta/",
+                      metavar="DIR", default="../icvpn-meta/")
 
     (options, args) = parser.parse_args()
 

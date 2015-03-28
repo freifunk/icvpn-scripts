@@ -85,8 +85,8 @@ if __name__ == "__main__":
                       help="Generate IPv6 config")
     parser.add_option("-s", "--sourcedir", dest="src",
                       help="""Use files in DIR as input files.
-                              Default: data/""", metavar="DIR",
-                      default="data")
+                              Default: ../icvpn-meta/""", metavar="DIR",
+                      default="../icvpn-meta/")
     parser.add_option("-x", "--exclude", dest="exclude", action="append",
                       help="Exclude the comma-separated list of COMMUNITIES",
                       metavar="COMMUNITIES",

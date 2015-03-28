@@ -149,7 +149,8 @@ if __name__ == "__main__":
                       choices=list(formatters.keys()),
                       default="dnsmasq")
     parser.add_option("-s", "--sourcedir", dest="src",
-                      help="Use files in DIR as input files. Default: ../icvpn-meta/",
+                      help="Use files in DIR as input files. Default: "
+                           "../icvpn-meta/",
                       metavar="DIR",
                       default="../icvpn-meta/")
     parser.add_option("-x", "--exclude", dest="exclude", action="append",

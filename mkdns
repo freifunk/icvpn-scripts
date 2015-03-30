@@ -58,6 +58,7 @@ class UnboundForwardFormatter(object):
     def add_data(self, domains, servers):
         self.zones[self.community] = {'forward': {}, 'reverse': {}}
         for domain in domains:
+            domain = str(domain)
             if domain.endswith('ip6.arpa') or domain.endswith('in-addr.arpa'):
                 self.zones[self.community]['reverse'][domain] = servers
             else:

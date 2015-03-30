@@ -50,6 +50,7 @@ def find_subnet(allocated, prefix_len):
         for allocation in allocations:
             if network.overlaps(allocation):
                 return True
+        return False
 
     for option in ip_network(FREIFUNK_NET_IP4).subnets(new_prefix=prefix_len):
         if is_colliding(option, allocated):

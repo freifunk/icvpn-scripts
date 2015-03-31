@@ -5,6 +5,7 @@ from argparse import ArgumentParser, Action, RawTextHelpFormatter
 from filereader import get_communities_data
 import bgp_formatter
 import dns_formatter
+import smokeping_formatter
 
 formatters = {
     "bird": bgp_formatter.BirdFormatter,
@@ -12,7 +13,8 @@ formatters = {
     "dnsmasq": dns_formatter.DnsmasqFormatter,
     "bind": dns_formatter.BindFormatter,
     "bind-forward": dns_formatter.BindForwardFormatter,
-    "unbound": dns_formatter.UnboundForwardFormatter
+    "unbound": dns_formatter.UnboundForwardFormatter,
+    "smokeping": smokeping_formatter.SmokePingFormatter,
 }
 
 

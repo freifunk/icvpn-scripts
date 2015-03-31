@@ -69,6 +69,8 @@ def find(srcdir, required_prefix_len, option_count):
     transfer_net_allocations = set()
     freifunk_ip4_allocations = set()
 
+    freifunk_ip4_allocations.add(ip_network(TRANSFER_NET_IP4))
+
     for _, data in get_communities_data(srcdir, []):
         try:
             for transfer_ips in data['bgp'].values():

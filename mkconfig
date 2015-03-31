@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser, Action, RawTextHelpFormatter
+
+from filereader import get_communities_data
+import bgp_formatter
+
+formatters = {
+    "bird": bgp_formatter.BirdFormatter,
+    "quagga": bgp_formatter.QuaggaFormatter,
+}
+
+
+def create_config(arguments):
+
+    srcdir = arguments.src
+    exclude = frozenset(arguments.exclude)
+
+    communities = get_communities_data(srcdir, exclude)
+
+    formatter = formatters[arguments.fmt]()
+    formatter.generate_config(arguments, communities)
+
+    print(formatter.get_config())
+
+
+if __name__ == "__main__":
+
+    parser = ArgumentParser()
+    parser.add_argument("-s", "--sourcedir", dest="src",
+                        help="""Use files in DIR as input files.
+                                Default: ../icvpn-meta/""", metavar="DIR",
+                        default="../icvpn-meta/")
+    parser.add_argument("-x", "--exclude", dest="exclude", action="append",
+                        help="Exclude the comma-separated list of COMMUNITIES",
+                        metavar="COMMUNITIES",
+                        default=[])
+    subparsers = parser.add_subparsers(title="format",
+                                       dest="fmt",
+                                       description="Create config in format.",
+                                       metavar=", ".join(formatters.keys()))
+
+    for name, formatter in formatters.items():
+        sub_parser = subparsers.add_parser(name=name)
+        # We have to create to whole argument set here, because
+        # the action argument of add_subparsers works not as
+        # expected. Using it changes major behaviour. To be fixed
+        # later.
+        formatter().populate_argument_parser(sub_parser)
+
+    arguments = parser.parse_args()
+
+    create_config(arguments)

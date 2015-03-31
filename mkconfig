@@ -4,10 +4,15 @@ from argparse import ArgumentParser, Action, RawTextHelpFormatter
 
 from filereader import get_communities_data
 import bgp_formatter
+import dns_formatter
 
 formatters = {
     "bird": bgp_formatter.BirdFormatter,
     "quagga": bgp_formatter.QuaggaFormatter,
+    "dnsmasq": dns_formatter.DnsmasqFormatter,
+    "bind": dns_formatter.BindFormatter,
+    "bind-forward": dns_formatter.BindForwardFormatter,
+    "unbound": dns_formatter.UnboundForwardFormatter
 }
 
 

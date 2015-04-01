@@ -129,7 +129,7 @@ def do_checks(srcdir):
                 # protocol version
                 # i.e. last 8 bits of IPv4 = last 16 bits of IPv6
                 # i.e. IPv6 has to be padded with 8 zeroes
-                matchbits = floor((ip.max_prefixlen - network.prefixlen)/2)
+                matchbits = floor((ip.max_prefixlen - network.prefixlen) / 2)
                 lastbytes.add(int(ip) % (1 << matchbits))
 
             if len(lastbytes) != 1:
@@ -154,9 +154,9 @@ def do_checks(srcdir):
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--sourcedir", dest="src",
-                      help="Use files in DIR as input files. Default: data/",
+                      help="Use files in DIR as input files. Default: ../icvpn-meta/",
                       metavar="DIR",
-                      default="data")
+                      default="../icvpn-meta/")
 
     (options, args) = parser.parse_args()
 

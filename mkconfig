@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, Action, RawTextHelpFormatter
+import os
+import sys
 
 from filereader import get_communities_data
 import bgp_formatter
@@ -23,6 +25,15 @@ def create_config(arguments):
 
     srcdir = arguments.src
     exclude = frozenset(arguments.exclude)
+
+    if not os.path.isdir(srcdir):
+        print("Error: Source directory does not exist or is not a directory",
+              file=sys.stderr)
+        sys.exit(1)
+
+    if arguments.fmt not in formatters:
+        print("Error: No formatter selected", file=sys.stderr)
+        sys.exit(2)
 
     communities = get_communities_data(srcdir, exclude)
 

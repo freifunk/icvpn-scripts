@@ -9,6 +9,7 @@ import smokeping_formatter
 
 formatters = {
     "bird": bgp_formatter.BirdFormatter,
+    "bird-roa": bgp_formatter.BirdRoaFormatter,
     "quagga": bgp_formatter.QuaggaFormatter,
     "dnsmasq": dns_formatter.DnsmasqFormatter,
     "bind": dns_formatter.BindFormatter,

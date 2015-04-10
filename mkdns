@@ -66,6 +66,7 @@ class UnboundForwardFormatter(object):
 
     def add_server_block(self):
         self.buffer.append('server:')
+        self.buffer.append('\tlocal-zone: "10.in-addr.arpa" nodefault')
         for community, zone_type in self.zones.items():
             self.buffer.append('\n\t# %s' % community)
             for zone in zone_type['forward'].keys():

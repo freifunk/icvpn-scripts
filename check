@@ -75,55 +75,55 @@ def check_rdns(data):
 
     # find allowed rdns-domain-names
     if 'networks' in data:
-        if 'IPv6'.lower() in data['networks']:
-            for net_str in data['networks']['IPv6'.lower()]:
+        if 'ipv6' in data['networks']:
+            for net_str in data['networks']['ipv6']:
                 try:
                     net = ip_family_network('IPv6', net_str)
                     net_length = math.floor(net.prefixlen / 4)  # 4 bits per character
                     # by rounding down instead of correcly handling partially used characters
                     # we generate false-passes but no false-warnings for prefixlength % 4 != 0
 
-                    net_dns = net \
+                    net_prefix = net \
                         .network_address \
                         .exploded \
                         .replace(":", "")[:net_length]
 
-                    net_dns = '.'.join(reversed(net_dns))
-                    net_dns = net_dns + '.ip6.arpa'
+                    net_rdns = '.'.join(reversed(net_prefix))
+                    net_rdns = '{}.ip6.arpa'.format(net_rdns)
 
-                    allowed_domains.append(net_dns)
+                    allowed_domains.append(net_rdns)
                 except ValueError:
-                    errcnt = errcnt + 0  # dummy statement to supress error about empty except-block
+                    pass
 
-        if 'IPv4'.lower() in data['networks']:
-            for net_str in data['networks']['IPv4'.lower()]:
+        if 'ipv4' in data['networks']:
+            for net_str in data['networks']['ipv4']:
                 try:
                     net = ip_family_network('IPv4', net_str)
                     net_length = math.floor(net.prefixlen / 8)  # 8 bits per block
                     # by rounding down instead of correcly handling partially used blocks
                     # we generate false-passes but no false-warnings for prefixlength % 8 != 0
 
-                    net_dns = net \
+                    net_prefix = net \
                         .network_address \
                         .exploded \
                         .split(".")[:net_length]
 
-                    net_dns = '.'.join(reversed(net_dns))
-                    net_dns = net_dns + '.in-addr.arpa'
+                    net_rdns = '.'.join(reversed(net_prefix))
+                    net_rdns = '{}.in-addr.arpa'.format(net_rdns)
 
-                    allowed_domains.append(net_dns)
+                    allowed_domains.append(net_rdns)
                 except ValueError:
-                    errcnt = errcnt + 0  # dummy statement to supress error about empty except-block
+                    pass
 
     if 'domains' in data:
         for domain in data['domains']:
             if domain.endswith('.ip6.arpa') or domain.endswith('.in-addr.arpa'):
-                failed = True
-                for net_dns in allowed_domains:
-                    if domain.endswith(net_dns):
-                        failed = False
+                found = False
+                for reverse_domain in allowed_domains:
+                    if domain.endswith(reverse_domain):  # we want communitys to be able to announce only a part of the net as RDNS-capable
+                        found = True
 
-                if failed:
+                if not found:
                     errcnt += 1
                     error("Illegal RDNS-Domain: found no matching net for %s (found nets: %s)" % (domain, allowed_domains))
 

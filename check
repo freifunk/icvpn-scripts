@@ -2,6 +2,7 @@
 
 import sys
 import ipaddress
+import math
 from optparse import OptionParser
 from math import floor
 from filereader import get_communities_data
@@ -66,6 +67,67 @@ def check_net(family, net, nets, community):
 
     return errcnt
 
+def check_rdns(data):
+    errcnt = 0
+
+    allowed_domains = []
+
+    # find allowed rdns-domain-names
+    if 'networks' in data:
+        if 'IPv6'.lower() in data['networks']:
+            for net_str in data['networks']['IPv6'.lower()]:
+                try:
+                    net = ip_family_network('IPv6', net_str)
+                    net_length = math.floor(net.prefixlen / 4) #4 bits per character
+                    # by rounding down instead of correcly handling partially used characters
+                    # we generate false-passes but no false-warnings for prefixlength % 4 != 0
+
+                    net_dns = net \
+                        .network_address \
+                        .exploded \
+                        .replace(":", "") \
+                        [:net_length]
+                    net_dns = '.'.join(reversed(net_dns))
+                    net_dns = net_dns + '.ip6.arpa'
+
+                    allowed_domains.append(net_dns)
+                except ValueError:
+                    errcnt = errcnt + 0 #dummy statement to supress error about empty except-block
+
+        if 'IPv4'.lower() in data['networks']:
+            for net_str in data['networks']['IPv4'.lower()]:
+                try:
+                    net = ip_family_network('IPv4', net_str)
+                    net_length = math.floor(net.prefixlen / 8) #8 bits per block
+                    # by rounding down instead of correcly handling partially used blocks
+                    # we generate false-passes but no false-warnings for prefixlength % 8 != 0
+
+                    net_dns = net \
+                        .network_address \
+                        .exploded \
+                        .split(".") \
+                        [:net_length]
+
+                    net_dns = '.'.join(reversed(net_dns))
+                    net_dns = net_dns + '.in-addr.arpa'
+
+                    allowed_domains.append(net_dns)
+                except ValueError:
+                    errcnt = errcnt + 0 #dummy statement to supress error about empty except-block
+
+    if 'domains' in data:
+        for domain in data['domains']:
+            if domain.endswith('.ip6.arpa') or domain.endswith('.in-addr.arpa'):
+                failed = True
+                for net_dns in allowed_domains:
+                    if domain.endswith(net_dns):
+                        failed = False
+
+                if failed:
+                    errcnt += 1
+                    error("Illegal RDNS-Domain: found no matching net for %s (found nets: %s)" % (domain, allowed_domains))
+
+    return errcnt
 
 def do_checks(srcdir):
     """
@@ -145,6 +207,9 @@ def do_checks(srcdir):
                                             net,
                                             networks[family],
                                             community)
+
+        if 'domains' in data:
+            errcnt += check_rdns(data)
 
     print(ANSI_COLOR_WARN, "%d warning(s)" % warncnt, ANSI_COLOR_RESET)
     print(ANSI_COLOR_ERR, "%d error(s)" % errcnt, ANSI_COLOR_RESET)

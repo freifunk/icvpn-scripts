@@ -96,7 +96,6 @@ def check_rdns(data):
 
                 allowed_domains.append(net_rdns)
 
-
         if 'ipv4' in data['networks']:
             for net_str in data['networks']['ipv4']:
                 try:

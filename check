@@ -79,41 +79,44 @@ def check_rdns(data):
             for net_str in data['networks']['ipv6']:
                 try:
                     net = ip_family_network('IPv6', net_str)
-                    net_length = math.floor(net.prefixlen / 4)  # 4 bits per character
-                    # by rounding down instead of correcly handling partially used characters
-                    # we generate false-passes but no false-warnings for prefixlength % 4 != 0
-
-                    net_prefix = net \
-                        .network_address \
-                        .exploded \
-                        .replace(":", "")[:net_length]
-
-                    net_rdns = '.'.join(reversed(net_prefix))
-                    net_rdns = '{}.ip6.arpa'.format(net_rdns)
-
-                    allowed_domains.append(net_rdns)
                 except ValueError:
-                    pass
+                    continue
+
+                net_length = math.floor(net.prefixlen / 4)  # 4 bits per character
+                # by rounding down instead of correcly handling partially used characters
+                # we generate false-passes but no false-warnings for prefixlength % 4 != 0
+
+                net_prefix = net \
+                    .network_address \
+                    .exploded \
+                    .replace(":", "")[:net_length]
+
+                net_rdns = '.'.join(reversed(net_prefix))
+                net_rdns = '{}.ip6.arpa'.format(net_rdns)
+
+                allowed_domains.append(net_rdns)
+
 
         if 'ipv4' in data['networks']:
             for net_str in data['networks']['ipv4']:
                 try:
                     net = ip_family_network('IPv4', net_str)
-                    net_length = math.floor(net.prefixlen / 8)  # 8 bits per block
-                    # by rounding down instead of correcly handling partially used blocks
-                    # we generate false-passes but no false-warnings for prefixlength % 8 != 0
-
-                    net_prefix = net \
-                        .network_address \
-                        .exploded \
-                        .split(".")[:net_length]
-
-                    net_rdns = '.'.join(reversed(net_prefix))
-                    net_rdns = '{}.in-addr.arpa'.format(net_rdns)
-
-                    allowed_domains.append(net_rdns)
                 except ValueError:
-                    pass
+                    continue
+
+                net_length = math.floor(net.prefixlen / 8)  # 8 bits per block
+                # by rounding down instead of correcly handling partially used blocks
+                # we generate false-passes but no false-warnings for prefixlength % 8 != 0
+
+                net_prefix = net \
+                    .network_address \
+                    .exploded \
+                    .split(".")[:net_length]
+
+                net_rdns = '.'.join(reversed(net_prefix))
+                net_rdns = '{}.in-addr.arpa'.format(net_rdns)
+
+                allowed_domains.append(net_rdns)
 
     if 'domains' in data:
         for domain in data['domains']:

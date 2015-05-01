@@ -32,7 +32,7 @@ specify another location.
 On Debian `apt-get install python-yaml` should install all dependencies.
 
 #### Debian Wheezy (oldstable)
-You might run into problems because of a missing ipaddress module (shipped with >= python 3.3), so install it via pip.
+You might run into problems because of a missing ipaddress module (shipped with python >= 3.3), so install it via pip.
 ```
 apt-get install python-yaml python3-pip
 pip-3.2 install ipaddress

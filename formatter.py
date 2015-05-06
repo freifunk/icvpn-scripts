@@ -5,7 +5,7 @@ class Formatter(object):
     """
     Abstract class to define the interface for formatters.
     """
-    
+
     comment_prefix = '#'
 
     def __init__(self):
@@ -27,9 +27,9 @@ class Formatter(object):
         """
         return NotImplementedError()
 
-    def add_comment(self,comment):
+    def add_comment(self, comment):
         """
-        Add a comment to the config. 
+        Add a comment to the config.
         """
         self.config.append(self.comment_prefix + ("\n%s " % self.comment_prefix).join(dedent(comment).split("\n")))
 

@@ -67,10 +67,34 @@ Make sure your copy of icvpn-meta is up to date, to ensure this utility
 produces useful results.
 ```
 
+Generate configurations (`mkconfig`)
+------------------------------------
+`mkconfig` generates configurations for various targets. Each target
+is selectable through a sub-command. 
 
-BGP (`mkbgp`)
--------------
-`mkbgp` generates the configuration for a BGP server (currently bird and quagga
+The output of `mkconfig --help`
+```
+usage: mkconfig [-h] [-s DIR] [-x COMMUNITIES]
+                unbound, dnsmasq, quagga, smokeping, bind-forward, bind,
+                bird-roa, bird ...
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s DIR, --sourcedir DIR
+                        Use files in DIR as input files. Default: ../icvpn-
+                        meta/
+  -x COMMUNITIES, --exclude COMMUNITIES
+                        Exclude the comma-separated list of COMMUNITIES
+
+format:
+  Create config in format.
+
+  unbound, dnsmasq, quagga, smokeping, bind-forward, bind, bird-roa, bird
+```
+
+### BGP (`mkconfig {bird, quagga}`)
+
+Generates the configuration for a BGP server (currently bird and quagga
 are supported) that wants to participate in the IC-VPN. It requires an already
 working Layer 2 connection (Tinc, see [the icvpn repository]) and sets up BGP
 sessions with other communities. This was the main reason for having the
@@ -83,33 +107,26 @@ only communities generating their BGP communities from that repository will
 accept your connection after the next update. Many communities manage their
 configuration by hand, so rejected connections are not unusual.
 
-The output of `mkbgp --help`:
+The output of `mkconfig bird --help`:
 ```
-Usage: mkbgp [options]
+usage: mkconfig bird [-h] [-4] [-6] [-p PREFIX] [-d TEMPLATE]
+                     [-t COMMUNITY:TEMPLATE]
 
-Options:
+optional arguments:
   -h, --help            show this help message and exit
-  -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: quagga, bird. Default: dnsmasq
   -4                    Generate IPv4 config
   -6                    Generate IPv6 config
-  -s DIR, --sourcedir=DIR
-                        Use files in DIR as input files.
-                        Default: data/
-  -x COMMUNITIES, --exclude=COMMUNITIES
-                        Exclude the comma-separated list of COMMUNITIES
-  -p PREFIX, --prefix=PREFIX
+  -p PREFIX, --prefix PREFIX
                         Prefix, e.g. bgp_icvpn_
-  -d TEMPLATE, --default=TEMPLATE
+  -d TEMPLATE, --default TEMPLATE
                         Default template/peer-group to use
-  -t COMMUNITY:TEMPLATE, --template=COMMUNITY:TEMPLATE
-                        Use different template/peer-group for some communities
+  -t COMMUNITY:TEMPLATE, --template COMMUNITY:TEMPLATE
+                        Use different template/peer-groupfor some communities
 ```
 
+### ROA (`mkconfig bird-roa`)
 
-ROA (`mkroa`)
--------------
-`mkroa` creates a Route Origin Authorization (ROA) table for a bgp server
+Creates a Route Origin Authorization (ROA) table for a bgp server
 (currently only bird is supported). ROAs can be used in filters to link
 prefixes to ASNs. By that, announcements are validated with the data from
 the [icvpn-meta repository], so that prefixes are only imported if announced
@@ -131,29 +148,29 @@ filter icvpn_in {
 ```
 which then can be used e.g. in a template `import filter icvpn_in;`.
 
-The output of `mkroa --help`:
-``` 
-Usage: mkroa [options]
+The output of `mkconfig bird-roa --help`:
+```
+usage: mkconfig bird-roa [-h] [-4] [-6] [-p PREFIX] [-d TEMPLATE]
+                         [-t COMMUNITY:TEMPLATE] [-m DEFAULT_MAX_PREFIXLEN]
 
-Options:
+optional arguments:
   -h, --help            show this help message and exit
-  -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: bird.
   -4                    Generate IPv4 config
   -6                    Generate IPv6 config
-  -s DIR, --sourcedir=DIR
-                        Use files in DIR as input files.
-                        Default: data/
-  -x COMMUNITIES, --exclude=COMMUNITIES
-                        Exclude the comma-separated list of COMMUNITIES
-  -m DEFAULT_MAX_PREFIXLEN, --max=DEFAULT_MAX_PREFIXLEN
-                        max prefix length to accept
+  -p PREFIX, --prefix PREFIX
+                        Prefix for protocol names, e.g. bgp_icvpn_<community>
+  -d TEMPLATE, --default TEMPLATE
+                        Default template/peer-group to use
+  -t COMMUNITY:TEMPLATE, --template COMMUNITY:TEMPLATE
+                        Define protocol template/peer-groupfor community
+  -m DEFAULT_MAX_PREFIXLEN, --max DEFAULT_MAX_PREFIXLEN
+                        Maximum prefix length accepted for route
 ```
 
 
-DNS (`mkdns`)
--------------
-`mkdns` generates configuration for DNS servers (currently bind and dnsmasq are
+### DNS (`mkconfig {dnsmasq, bind, bind-forward, unbound`)
+
+Generates configuration for DNS servers (currently bind and dnsmasq are
 supported) to enable it to resolve the custom top level domains and reverse
 `.arpa` zones of Freifunk communities by configuring the appropriate DNS
 servers as forwarders for these zones.
@@ -163,45 +180,23 @@ communities. While for some communities a global IPv6 connection might be
 enough to reach their servers, others do not use global IPv6 and you need a
 connection to the IC-VPN itself to connect (either using IPv6 or IPv4).
 
-The output of `mkdns --help`:
+The output of `mkconfig bind --help`:
 ```
-Usage: mkdns [options]
+usage: mkconfig bind [-h] [--filter {v6,v4}]
 
-Options:
-  -h, --help            show this help message and exit
-  -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: dnsmasq, bind-forward, unbound, bind.
-                        Default: dnsmasq
-  -s DIR, --sourcedir=DIR
-                        Use files in DIR as input files. Default: data/
-  -x COMMUNITY, --exclude=COMMUNITY
-                        Exclude COMMUNITY (may be repeated)
-  --filter=FILTER       Only include certain servers.
-                        Possible choices: v4, v6
+optional arguments:
+  -h, --help        show this help message and exit
+  --filter {v6,v4}  Only include certain servers. Possible choices: v6, v4
 ```
 
 
-Smokeping (`mksmokeping`)
--------------------------
-`mksmokeping` generates the configuration for a [Smokeping] instance to make it
+### Smokeping (`mkconfig smokeping`)
+Generates the configuration for a [Smokeping] instance to make it
 monitor the BGP servers of all communities. This obviously requires a working
 Layer 2 IC-VPN connection (Tinc, see [icvpn repository]), or else none of them
 should be reachable..
 
-The output of `mksmokeping --help`:
-```
-Usage: mksmokeping [options]
-
-Options:
-  -h, --help            show this help message and exit
-  -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: SmokePing. Default: SmokePing
-  -s DIR, --sourcedir=DIR
-                        Use files in DIR as input files.
-                        Default: data/
-  -x COMMUNITIES, --exclude=COMMUNITIES
-                        Exclude the comma-separated list of COMMUNITIES
-```
+Smokeping command has no additional arguments.
 
 [Smokeping]: http://oss.oetiker.ch/smokeping/
 

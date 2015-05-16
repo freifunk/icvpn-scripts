@@ -74,7 +74,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
                       help="""Create config in format FMT.
-                              Possible values: %s. Default: dnsmasq""" %
+                              Possible values: %s. Default: bird""" %
                            ", ".join(formatters.keys()),
                       metavar="FMT",
                       choices=list(formatters.keys()),

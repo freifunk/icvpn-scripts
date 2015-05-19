@@ -158,6 +158,10 @@ def do_checks(srcdir):
 
         if 'asn' in data:
             errcnt += check_dupe("ASN", data['asn'], asns, community)
+        else:
+            if 'bgp' in data:
+                errcnt += 1
+                error("BGP block found, but no ASN")
 
         for bgp in data.get('bgp', []):
             errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
@@ -203,13 +207,15 @@ def do_checks(srcdir):
                      "%s (%s)" % (lastbytes, community))
 
         if 'networks' in data:
-            for family in ('IPv4', 'IPv6'):
-                if family.lower() in data['networks']:
-                    for net in data['networks'][family.lower()]:
+            for family in ('ipv4', 'ipv6'):
+                try:
+                    for net in data['networks'][family]:
                         errcnt += check_net(family,
                                             net,
                                             networks[family],
                                             community)
+                except KeyError:
+                    pass
 
         if 'domains' in data:
             errcnt += check_rdns(data)

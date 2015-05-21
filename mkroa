@@ -53,6 +53,7 @@ def create_config(srcdir, exclude, family,
         try:
             networks = data["networks"][family]
             asn = data["asn"]
+            delegate = data.get('delegate', {})
         except (TypeError, KeyError):
             continue
 
@@ -63,6 +64,16 @@ def create_config(srcdir, exclude, family,
             else:
                 max_prefixlen = default_max_prefixlen
             formatter.add_data(asn, community, network, max_prefixlen)
+
+        for delegate_asn, delegate_networks in delegate.items():
+            for delegate_network in delegate_networks:
+                # not very beautiful, but everything more proper requires including a library
+                if family == 'ipv6' and '.' in delegate_network:
+                    continue
+                if family == 'ipv4' and ':' in delegate_network:
+                    continue
+                max_prefixlen = max(int(delegate_network.split("/")[1]), default_max_prefixlen)
+                formatter.add_data(delegate_asn, community, delegate_network, max_prefixlen)
 
     print(formatter.finalize())
 

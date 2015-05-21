@@ -132,6 +132,50 @@ def check_rdns(data):
     return errcnt
 
 
+def check_delegation(nets, asns, dnet, dasn):
+    errcnt = 0
+
+    # merge ipv4 / ipv6 nets, flatten the list
+    nets = nets.get('ipv4', []) + nets.get('ipv6', [])
+    nets = [ipaddress.ip_network(net) for net in nets]
+
+    # check if delegated net is subnet to a given supernetwork allocation
+    dnet = ipaddress.ip_network(dnet)
+    contained = False
+    for net in nets:
+        if type(net) is not type(dnet):
+            # ip family mismatch
+            continue
+
+        # skip supernet check if delegated prefixlen is smaller than the current networks prefixlen
+        if dnet.prefixlen <= net.prefixlen:
+            continue
+
+        try:
+            supernet = dnet.supernet(new_prefix=net.prefixlen)
+            if net == supernet:
+                contained = True
+                break
+        except ValueError as ex:
+            errcnt += 1
+            error("Exception during lookup of supernet for {} with prefixlen {}: {}".format(dnet, net.prefixlen, ex))
+
+    if not contained:
+        errcnt += 1
+        error("Delegated Network {} is not contained in any existing network".format(dnet))
+
+    # checking asn availability depends on having a complete list at the time
+    # when we do the check. this is currently not the case as we're getting
+    # the data from a generator.
+    """
+    if dasn not in asns:
+        errcnt += 1
+        error("Network {} was delegated to unknown ASN {}".format(dnet, dasn))
+    """
+
+    return errcnt
+
+
 def do_checks(srcdir):
     """
     Check files for sanity.
@@ -158,6 +202,10 @@ def do_checks(srcdir):
 
         if 'asn' in data:
             errcnt += check_dupe("ASN", data['asn'], asns, community)
+        else:
+            if 'bgp' in data:
+                errcnt += 1
+                error("BGP block found, but no ASN")
 
         for bgp in data.get('bgp', []):
             errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
@@ -203,16 +251,23 @@ def do_checks(srcdir):
                      "%s (%s)" % (lastbytes, community))
 
         if 'networks' in data:
-            for family in ('IPv4', 'IPv6'):
-                if family.lower() in data['networks']:
-                    for net in data['networks'][family.lower()]:
+            for family in ('ipv4', 'ipv6'):
+                try:
+                    for net in data['networks'][family]:
                         errcnt += check_net(family,
                                             net,
                                             networks[family],
                                             community)
+                except KeyError:
+                    pass
 
         if 'domains' in data:
             errcnt += check_rdns(data)
+
+        if 'delegate' in data:
+            for dasn, dnets in data['delegate'].items():
+                for dnet in dnets:
+                    errcnt += check_delegation(data['networks'], asns, dnet, dasn)
 
     print(ANSI_COLOR_WARN, "%d warning(s)" % warncnt, ANSI_COLOR_RESET)
     print(ANSI_COLOR_ERR, "%d error(s)" % errcnt, ANSI_COLOR_RESET)

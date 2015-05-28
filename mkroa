@@ -41,6 +41,7 @@ class BirdRoaFormatter(Formatter):
 def add_roa(formatter, asn, community, network, prefixlen, default_max_prefixlen):
     formatter.add_data(asn, community, network, max(prefixlen, default_max_prefixlen))
 
+
 def create_config(srcdir, exclude, family, fmtclass, default_max_prefixlen):
     """
     Generates a configuration using all files in srcdir
@@ -51,7 +52,7 @@ def create_config(srcdir, exclude, family, fmtclass, default_max_prefixlen):
     """
     formatter = fmtclass()
 
-    if default_max_prefixlen == None:
+    if default_max_prefixlen is None:
         if family == 'ipv6':
             default_max_prefixlen = 64
         elif family == 'ipv4':

@@ -38,8 +38,10 @@ class BirdRoaFormatter(Formatter):
         return "\n".join(self.config)
 
 
-def create_config(srcdir, exclude, family,
-                  fmtclass, default_max_prefixlen):
+def add_roa(formatter, asn, community, network, prefixlen, default_max_prefixlen):
+    formatter.add_data(asn, community, network, max(prefixlen, default_max_prefixlen))
+
+def create_config(srcdir, exclude, family, fmtclass, default_max_prefixlen):
     """
     Generates a configuration using all files in srcdir
     (non-recursively) excluding communities from 'exclude'.
@@ -48,6 +50,12 @@ def create_config(srcdir, exclude, family,
     results.
     """
     formatter = fmtclass()
+
+    if default_max_prefixlen == None:
+        if family == 'ipv6':
+            default_max_prefixlen = 64
+        elif family == 'ipv4':
+            default_max_prefixlen = 24
 
     for community, data in get_communities_data(srcdir, exclude):
         try:
@@ -59,11 +67,7 @@ def create_config(srcdir, exclude, family,
 
         for network in sorted(networks):
             prefixlen = int(network.split("/")[1])
-            if prefixlen > default_max_prefixlen:
-                max_prefixlen = prefixlen
-            else:
-                max_prefixlen = default_max_prefixlen
-            formatter.add_data(asn, community, network, max_prefixlen)
+            add_roa(formatter, asn, community, network, prefixlen, default_max_prefixlen)
 
         for delegate_asn, delegate_networks in delegate.items():
             for delegate_network in delegate_networks:
@@ -72,8 +76,8 @@ def create_config(srcdir, exclude, family,
                     continue
                 if family == 'ipv4' and ':' in delegate_network:
                     continue
-                max_prefixlen = max(int(delegate_network.split("/")[1]), default_max_prefixlen)
-                formatter.add_data(delegate_asn, community, delegate_network, max_prefixlen)
+                prefixlen = int(delegate_network.split("/")[1])
+                add_roa(formatter, delegate_asn, community, delegate_network, prefixlen, default_max_prefixlen)
 
     print(formatter.finalize())
 
@@ -103,7 +107,7 @@ if __name__ == "__main__":
                       help="Exclude the comma-separated list of COMMUNITIES",
                       metavar="COMMUNITIES",
                       default=[])
-    parser.add_option("-m", "--max", dest="default_max_prefixlen", default=0,
+    parser.add_option("-m", "--max", dest="default_max_prefixlen", default=None,
                       type=int, help="max prefix length to accept")
     parser.set_defaults(family="ipv6")
 

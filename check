@@ -265,7 +265,7 @@ def do_checks(srcdir):
         if 'domains' in data:
             errcnt += check_rdns(data)
             for domain in data.get('domains', []):
-                errcnt += check_dupe("Domain", domain, domains, community)
+                errcnt += check_dupe("Domain", domain.upper(), domains, community)
 
         if 'delegate' in data:
             for dasn, dnets in data['delegate'].items():

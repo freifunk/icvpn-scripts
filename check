@@ -7,6 +7,9 @@ from optparse import OptionParser
 from math import floor
 from filereader import get_communities_data
 
+from urllib.request import urlopen
+from urllib.error import URLError
+
 
 ICVPN_NETWORKS = {
     "IPv4": ipaddress.IPv4Network("10.207.0.0/16"),
@@ -16,6 +19,7 @@ ICVPN_NETWORKS = {
 ANSI_COLOR_ERR = "\x1b[31m"
 ANSI_COLOR_WARN = "\x1b[33m"
 ANSI_COLOR_RESET = "\x1b[0m"
+TLD_LIST = 'http://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 
 
 def error(*arg):
@@ -36,6 +40,22 @@ def ip_family_address(family, address):
 def ip_family_network(family, network):
     obj = getattr(ipaddress, family + "Network")
     return obj(network)
+
+
+def get_tlds():
+    domains = dict()
+
+    try:
+        response = urlopen(TLD_LIST)
+    except URLError:
+        warn("Unable to load IANA-Domains. Skipping IANA-Domain-checks")
+    else:
+        for line in response.readlines():
+            if line.startswith(b'#'):
+                continue
+            domains[line.decode("utf-8").rstrip().upper()] = "IANA-Domains"
+
+    return domains
 
 
 def check_dupe(name, v, d, community):
@@ -188,7 +208,7 @@ def do_checks(srcdir):
         'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
         'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
     }
-    domains = dict()
+    domains = get_tlds()
     warncnt = 0
     errcnt = 0
 

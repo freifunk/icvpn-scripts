@@ -148,7 +148,7 @@ def check_delegation(nets, asns, dnet, dasn):
             continue
 
         # skip supernet check if delegated prefixlen is smaller than the current networks prefixlen
-        if dnet.prefixlen <= net.prefixlen:
+        if dnet.prefixlen < net.prefixlen:
             continue
 
         try:

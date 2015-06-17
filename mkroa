@@ -62,14 +62,13 @@ def create_config(srcdir, exclude, family, fmtclass, default_max_prefixlen):
         try:
             networks = data["networks"][family]
             asn = data["asn"]
-            delegate = data.get('delegate', {})
+            for network in sorted(networks):
+                prefixlen = int(network.split("/")[1])
+                add_roa(formatter, asn, community, network, prefixlen, default_max_prefixlen)
         except (TypeError, KeyError):
-            continue
+            pass
 
-        for network in sorted(networks):
-            prefixlen = int(network.split("/")[1])
-            add_roa(formatter, asn, community, network, prefixlen, default_max_prefixlen)
-
+        delegate = data.get('delegate', {})
         for delegate_asn, delegate_networks in delegate.items():
             for delegate_network in delegate_networks:
                 # not very beautiful, but everything more proper requires including a library
@@ -78,7 +77,7 @@ def create_config(srcdir, exclude, family, fmtclass, default_max_prefixlen):
                 if family == 'ipv4' and ':' in delegate_network:
                     continue
                 prefixlen = int(delegate_network.split("/")[1])
-                add_roa(formatter, delegate_asn, community, delegate_network, prefixlen, default_max_prefixlen)
+                add_roa(formatter, delegate_asn, "{} (delegation)".format(community), delegate_network, prefixlen, default_max_prefixlen)
 
     print(formatter.finalize())
 

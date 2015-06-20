@@ -252,9 +252,9 @@ def do_checks(srcdir):
                      "%s (%s)" % (lastbytes, community))
 
         if 'networks' in data:
-            for family in ('ipv4', 'ipv6'):
+            for family in ('IPv4', 'IPv6'):
                 try:
-                    for net in data['networks'][family]:
+                    for net in data['networks'][family.lower()]:
                         errcnt += check_net(family,
                                             net,
                                             networks[family],

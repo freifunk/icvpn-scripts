@@ -48,7 +48,7 @@ def get_tlds():
     try:
         response = urlopen(TLD_LIST)
     except URLError:
-        warn("Unable to load IANA-Domains. Skipping IANA-Domain-checks")
+        pass
     else:
         for line in response.readlines():
             if line.startswith(b'#'):
@@ -208,9 +208,13 @@ def do_checks(srcdir):
         'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
         'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
     }
-    domains = get_tlds()
     warncnt = 0
     errcnt = 0
+    domains = get_tlds()
+
+    if len(domains) == 0:
+        warn("Unable to load IANA-Domains. Skipping IANA-Domain-checks")
+        warncnt += 1
 
     def filereader_error_handler(community):
         global errcnt

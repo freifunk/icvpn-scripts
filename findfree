@@ -12,7 +12,7 @@ TRANSFER_NET_IP4 = '10.207.0.0/16'
 TRANSFER_NET_IP6 = 'fec0::a:cf:0:0/96'
 FREIFUNK_NET_IP4 = '10.0.0.0/8'
 FREIFUNK_NET_IP6 = 'fd00::/8'
-ASN_RANGE = range(64512, 65535)
+ASN_RANGE = range(64856, 65535)
 
 
 def find_transfer_ip(allocated):

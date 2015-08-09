@@ -41,7 +41,7 @@ pip-3.2 install ipaddress
 
 Find Free Resources (`findfree`)
 --------------------------------
-`findfree` searches for free transfer ip and ip subnet allocations in the predefined
+`findfree` searches for free asn, transfer ip combinations and ip subnet allocations in the predefined
 network segments.
 
 **Note** that it is crucial to have an up to date [icvpn-meta repository] to
@@ -90,12 +90,12 @@ Usage: mkbgp [options]
 Options:
   -h, --help            show this help message and exit
   -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: quagga, bird. Default: dnsmasq
+                        Possible values: quagga, bird. Default: bird
   -4                    Generate IPv4 config
   -6                    Generate IPv6 config
   -s DIR, --sourcedir=DIR
                         Use files in DIR as input files.
-                        Default: data/
+                        Default: ../icvpn-meta/
   -x COMMUNITIES, --exclude=COMMUNITIES
                         Exclude the comma-separated list of COMMUNITIES
   -p PREFIX, --prefix=PREFIX
@@ -104,6 +104,7 @@ Options:
                         Default template/peer-group to use
   -t COMMUNITY:TEMPLATE, --template=COMMUNITY:TEMPLATE
                         Use different template/peer-group for some communities
+
 ```
 
 
@@ -143,7 +144,7 @@ Options:
   -6                    Generate IPv6 config
   -s DIR, --sourcedir=DIR
                         Use files in DIR as input files.
-                        Default: data/
+                        Default: ../icvpn-meta/
   -x COMMUNITIES, --exclude=COMMUNITIES
                         Exclude the comma-separated list of COMMUNITIES
   -m DEFAULT_MAX_PREFIXLEN, --max=DEFAULT_MAX_PREFIXLEN
@@ -170,14 +171,15 @@ Usage: mkdns [options]
 Options:
   -h, --help            show this help message and exit
   -f FMT, --format=FMT  Create config in format FMT.
-                        Possible values: dnsmasq, bind-forward, unbound, bind.
+                        Possible values: bind-forward, dnsmasq, unbound, bind.
                         Default: dnsmasq
   -s DIR, --sourcedir=DIR
-                        Use files in DIR as input files. Default: data/
+                        Use files in DIR as input files. Default: ../icvpn-
+                        meta/
   -x COMMUNITY, --exclude=COMMUNITY
                         Exclude COMMUNITY (may be repeated)
   --filter=FILTER       Only include certain servers.
-                        Possible choices: v4, v6
+                        Possible choices: v6, v4
 ```
 
 
@@ -198,9 +200,10 @@ Options:
                         Possible values: SmokePing. Default: SmokePing
   -s DIR, --sourcedir=DIR
                         Use files in DIR as input files.
-                        Default: data/
+                        Default: ../icvpn-meta/
   -x COMMUNITIES, --exclude=COMMUNITIES
                         Exclude the comma-separated list of COMMUNITIES
+
 ```
 
 [Smokeping]: http://oss.oetiker.ch/smokeping/

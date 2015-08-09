@@ -4,7 +4,6 @@ findfree - find free resources in the icvpn meta universe
 """
 import argparse
 import yaml
-import sys
 from itertools import islice
 from ipaddress import ip_address, ip_network
 from filereader import get_communities_data

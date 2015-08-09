@@ -4,6 +4,7 @@ findfree - find free resources in the icvpn meta universe
 """
 import argparse
 import yaml
+import sys
 from itertools import islice
 from ipaddress import ip_address, ip_network
 from filereader import get_communities_data
@@ -12,7 +13,7 @@ TRANSFER_NET_IP4 = '10.207.0.0/16'
 TRANSFER_NET_IP6 = 'fec0::a:cf:0:0/96'
 FREIFUNK_NET_IP4 = '10.0.0.0/8'
 FREIFUNK_NET_IP6 = 'fd00::/8'
-
+ASN_RANGE = range(64512, 65535)
 
 def find_transfer_ip(allocated):
     """
@@ -68,6 +69,7 @@ def find(srcdir, required_prefix_len, option_count):
     """
     transfer_net_allocations = set()
     freifunk_ip4_allocations = set()
+    asn_free = list(ASN_RANGE)
 
     freifunk_ip4_allocations.add(ip_network(TRANSFER_NET_IP4))
 
@@ -86,11 +88,17 @@ def find(srcdir, required_prefix_len, option_count):
         except KeyError:
             pass
 
+        try:
+            asn_free.remove(data['asn'])
+        except (KeyError, ValueError):
+            pass
+
     def take(num, iterable):
         """ Return first num items of the iterable as a list """
         return list(islice(iterable, num))
 
-    store = {'transfer': take(option_count,
+    store = {'asn': asn_free[:option_count],
+             'transfer': take(option_count,
                               find_transfer_ip(transfer_net_allocations)),
              'subnets':  take(option_count,
                               find_subnet(freifunk_ip4_allocations,

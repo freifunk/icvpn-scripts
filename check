@@ -211,6 +211,13 @@ def do_checks(srcdir):
         for bgp in data.get('bgp', []):
             errcnt += check_dupe("BGP peer name", bgp, bgp_gw, community)
 
+            # prevent dashes in peernames, this breaks
+            # a) bird config when not using quotation marks
+            # b) bird cli
+            if '-' in bgp:
+                error("BGP Peers may not use dashes (breaks bird/bird cli): {peername}".format(peername=bgp))
+                errcnt += 1
+
             lastbytes = set()
 
             for ipclass in data['bgp'][bgp]:

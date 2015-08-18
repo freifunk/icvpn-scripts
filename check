@@ -185,8 +185,8 @@ def do_checks(srcdir):
     bgp_gw = dict()
     bgp_gw_ip = dict()
     networks = {
-        'IPv4': {ICVPN_NETWORKS['IPv4']: 'transfer'},
-        'IPv6': {ICVPN_NETWORKS['IPv6']: 'transfer'},
+        'IPv4': {},
+        'IPv6': {},
     }
     domains = dict()
     warncnt = 0

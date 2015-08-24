@@ -7,9 +7,7 @@ from optparse import OptionParser
 from math import floor
 from filereader import get_communities_data
 
-from urllib.request import urlopen
-from urllib.error import URLError
-
+import requests
 
 ICVPN_NETWORKS = {
     "IPv4": ipaddress.IPv4Network("10.207.0.0/16"),
@@ -46,14 +44,14 @@ def get_tlds():
     domains = dict()
 
     try:
-        response = urlopen(TLD_LIST)
-    except URLError:
+        response = requests.get(TLD_LIST, timeout=1.0)
+    except requests.exceptions.RequestException:
         pass
     else:
-        for line in response.readlines():
-            if line.startswith(b'#'):
+        for line in response.text.split('\n'):
+            if line.startswith('#'):
                 continue
-            domains[line.decode("utf-8").rstrip().upper()] = "IANA-Domains"
+            domains[line.rstrip().upper()] = "tld(IANA)"
 
     return domains
 
@@ -213,7 +211,7 @@ def do_checks(srcdir):
     domains = get_tlds()
 
     if len(domains) == 0:
-        warn("Unable to load IANA-Domains. Skipping IANA-Domain-checks")
+        warn("Unable to load IANA Toplevel Domainlist from %s, skipping checks..." % TLD_LIST)
         warncnt += 1
 
     def filereader_error_handler(community):

@@ -7,6 +7,7 @@ from optparse import OptionParser
 from math import floor
 from filereader import get_communities_data
 
+import requests
 
 ICVPN_NETWORKS = {
     "IPv4": ipaddress.IPv4Network("10.207.0.0/16"),
@@ -16,6 +17,7 @@ ICVPN_NETWORKS = {
 ANSI_COLOR_ERR = "\x1b[31m"
 ANSI_COLOR_WARN = "\x1b[33m"
 ANSI_COLOR_RESET = "\x1b[0m"
+TLD_LIST = 'http://data.iana.org/TLD/tlds-alpha-by-domain.txt'
 
 
 def error(*arg):
@@ -36,6 +38,22 @@ def ip_family_address(family, address):
 def ip_family_network(family, network):
     obj = getattr(ipaddress, family + "Network")
     return obj(network)
+
+
+def get_tlds():
+    domains = dict()
+
+    try:
+        response = requests.get(TLD_LIST, timeout=1.0)
+    except requests.exceptions.RequestException:
+        pass
+    else:
+        for line in response.text.split('\n'):
+            if line.startswith('#'):
+                continue
+            domains[line.rstrip().upper()] = "tld(IANA)"
+
+    return domains
 
 
 def check_dupe(name, v, d, community):
@@ -188,9 +206,13 @@ def do_checks(srcdir):
         'IPv4': {},
         'IPv6': {},
     }
-    domains = dict()
     warncnt = 0
     errcnt = 0
+    domains = get_tlds()
+
+    if len(domains) == 0:
+        warn("Unable to load IANA Toplevel Domainlist from %s, skipping checks..." % TLD_LIST)
+        warncnt += 1
 
     def filereader_error_handler(community):
         global errcnt
@@ -272,7 +294,7 @@ def do_checks(srcdir):
         if 'domains' in data:
             errcnt += check_rdns(data)
             for domain in data.get('domains', []):
-                errcnt += check_dupe("Domain", domain, domains, community)
+                errcnt += check_dupe("Domain", domain.upper(), domains, community)
 
         if 'delegate' in data:
             for dasn, dnets in data['delegate'].items():

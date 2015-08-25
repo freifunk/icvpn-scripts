@@ -295,6 +295,11 @@ def do_checks(srcdir):
             errcnt += check_rdns(data)
             for domain in data.get('domains', []):
                 errcnt += check_dupe("Domain", domain.upper(), domains, community)
+                try:
+                    domain.encode("ascii").decode("idna")
+                except (UnicodeEncodeError, UnicodeError):
+                    errcnt += 1
+                    error("Domain not IDNA-encoded: %s" % (domain))
 
         if 'delegate' in data:
             for dasn, dnets in data['delegate'].items():

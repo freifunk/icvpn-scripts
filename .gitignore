@@ -1,2 +1,4 @@
 *.pyc
 __pycache__
+netblocks-data/registry-inetnums.json
+netblocks-data/registry-prefixes.json

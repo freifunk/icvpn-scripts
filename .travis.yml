@@ -2,4 +2,4 @@ language: python
 python:
   - "3.4"
 install: "pip install pep8"
-script: "pep8 --ignore=E501 *.py mk* check"
+script: "pep8 --ignore=E501 *.py mk* check netblocks"

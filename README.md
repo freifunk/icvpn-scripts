@@ -237,6 +237,27 @@ Note that `check` requires Python **3.3**, for it provides an excellent
 [IPv4/IPv6 manipulation
 library](https://docs.python.org/3.3/library/ipaddress.html)
 
+
+Visualisation (`netblocks`)
+---------------------------
+This script generates json-files compartible to dn42-netblock-visu to visualise
+the adressspace utilisation.
+
+The output of `netblocks --help`
+```
+Usage: netblocks [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -s DIR, --sourcedir=DIR
+                        Use files in DIR as input files. Default: ../icvpn-
+                        meta/
+  -d DIR, --destdir=DIR
+                        Use DIR as destination for the generated files.
+                        Default: ./netblocks-data
+```
+
+
 Contributing
 ------------
 You have an idea how to use the data in the [icvpn-meta repository]

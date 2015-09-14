@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+
+from optparse import OptionParser
+from filereader import get_communities_data
+from collections import defaultdict
+from collections import OrderedDict
+from ipaddress import ip_address, ip_network
+import json
+import time
+
+
+class Prefix:
+    net = None
+    children = None
+    community = ""
+
+    def __init__(self, net, community):
+        self.net = net
+        self.children = set()
+        self.community = community
+
+PREFIX = ip_network('10.0.0.0/8')
+
+
+def add_net(nets, net, community):
+    try:
+        net = ip_network(net)
+    except ValueError:
+        pass
+    else:
+        if PREFIX.overlaps(net):
+            nets[net.prefixlen].append(Prefix(net, community))
+
+
+def get_nets(srcdir):
+    nets = defaultdict(list)
+    for community, data in get_communities_data(srcdir, []):
+        if 'networks' in data:
+            if 'ipv4' in data['networks']:
+                for net in data['networks']['ipv4']:
+                    add_net(nets, net, community)
+
+        if 'delegate' in data:
+            for d in data['delegate']:
+                for net in data['delegate'][d]:
+                    add_net(nets, net, community)
+
+    return nets
+
+
+def insert(net, tree):
+    for n in tree.children:
+        if(n.net == net.net):
+            return
+
+        if n.net.overlaps(net.net):
+            insert(net, n)
+            return
+
+    tree.children.add(net)
+
+
+def build_prefixtree(nets):
+    tree = Prefix(PREFIX, 'root')
+
+    #iterate over prefixes - biggest first
+    for k, v in nets.items():
+        for net in v:
+            insert(net, tree)
+
+    return tree
+
+
+def insert_json(tree):
+    json = dict()
+    json['prefix'] = tree.net.compressed
+    json['size'] = tree.net.num_addresses
+    json['children'] = list()
+
+    for child in tree.children:
+        json['children'].append(insert_json(child))
+
+    json['children'] = sorted(json['children'], key=lambda child: int(ip_network(child['prefix']).network_address))
+    return json
+
+
+def get_inetnum(net, status='full'):
+    json = dict()
+    json['admin-c'] = list()
+    json['admin-c'].append(net.community)
+
+    json['status'] = list()
+    json['status'].append(status)
+
+    json['inetnum'] = list()
+    json['inetnum'].append("%s - %s" % (net.net.network_address, net.net.broadcast_address))
+
+    json['netname'] = list()
+    json['netname'].append(net.community)
+    return json
+
+
+def build_inetnums(nets):
+    json = dict()
+    for k, v in nets.items():
+        for net in v:
+            json[net.net.compressed] = get_inetnum(net)
+    json[PREFIX.compressed] = get_inetnum(Prefix(PREFIX, 'root'), 'ask')
+    return json
+
+
+def get_netcount(nets):
+    i = 0
+    for k, v in nets.items():
+        for net in v:
+            i += 1
+    return i
+
+
+def generate(srcdir, destdir):
+    nets = get_nets(srcdir)
+    prefix_tree = build_prefixtree(nets)
+    json_tree = insert_json(prefix_tree)
+    json_tree['prefixes'] = get_netcount(nets)
+    json_tree['origin'] = 'icvpn-meta'
+    json_tree['date'] = time.time()
+
+    with open(destdir + '/registry-prefixes.json', 'w') as outfile:
+        json.dump(json_tree, outfile)
+
+    with open(destdir + '/registry-inetnums.json', 'w') as outfile:
+        json.dump(build_inetnums(nets), outfile)
+
+
+if __name__ == "__main__":
+    parser = OptionParser()
+    parser.add_option("-s", "--sourcedir", dest="src",
+                      help="Use files in DIR as input files. Default: ../icvpn-meta/",
+                      metavar="DIR",
+                      default="../icvpn-meta/")
+
+    parser.add_option("-d", "--destdir", dest="dest",
+                      help="Use DIR as destination for the generated files. Default: ./netblocks-data",
+                      metavar="DIR",
+                      default="./netblocks-data")
+
+    (options, args) = parser.parse_args()
+
+    generate(options.src, options.dest)

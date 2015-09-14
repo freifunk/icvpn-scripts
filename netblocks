@@ -63,7 +63,7 @@ def insert(net, tree):
 def build_prefixtree(nets):
     tree = Prefix(PREFIX, 'root')
 
-    #iterate over prefixes - biggest first
+    # iterate over prefixes - biggest first
     for k, v in nets.items():
         for net in v:
             insert(net, tree)

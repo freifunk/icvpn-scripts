@@ -101,7 +101,6 @@ def insert_json(tree):
 
     if not tree.visible:
         tmp['display'] = 'none'
-        print('bla')
 
     return tmp
 
@@ -129,15 +128,15 @@ def build_inetnums(nets):
     return inetnums
 
 
-def get_netcount(nets):
-    return len([v for _, v in nets.items()])
+def get_prefix_count(nets):
+    return sum([len(prefixes) for prefixes in nets.values()])
 
 
 def generate(srcdir, destdir):
     nets = get_nets(srcdir)
     prefix_tree = build_prefixtree(nets)
     json_tree = insert_json(insert_empty_nets(prefix_tree))
-    json_tree['prefixes'] = get_netcount(nets)
+    json_tree['prefixes'] = get_prefix_count(nets)
     json_tree['origin'] = 'icvpn-meta'
     json_tree['date'] = time.time()
 

@@ -4,7 +4,7 @@ from optparse import OptionParser
 from filereader import get_communities_data
 from collections import defaultdict
 from collections import OrderedDict
-from ipaddress import ip_address, ip_network
+from ipaddress import ip_address, ip_network, summarize_address_range
 import json
 import time
 
@@ -13,11 +13,13 @@ class Prefix:
     net = None
     children = None
     community = ""
+    visible = True
 
-    def __init__(self, net, community):
+    def __init__(self, net, community, visible = True):
         self.net = net
         self.children = set()
         self.community = community
+        self.visible = visible
 
 PREFIX = ip_network('10.0.0.0/8')
 
@@ -70,6 +72,24 @@ def build_prefixtree(nets):
 
     return tree
 
+def insert_empty_nets(tree):
+    children = set()
+    old_children = sorted(tree.children, key=lambda child: int(child.net.network_address))
+    prev = None
+    for child in old_children:
+        insert_empty_nets(child)
+        children.add(child)
+        if prev != None:
+            start = int(prev.net.broadcast_address)+1
+            end = int(child.net.network_address)-1
+            if end > start:
+                internets = summarize_address_range(ip_address(start), ip_address(end))
+                for internet in internets:
+                    children.add(Prefix(internet, 'free', False))
+        prev = child
+    tree.children = children
+
+    return tree
 
 def insert_json(tree):
     json = dict()
@@ -81,6 +101,9 @@ def insert_json(tree):
         json['children'].append(insert_json(child))
 
     json['children'] = sorted(json['children'], key=lambda child: int(ip_network(child['prefix']).network_address))
+    if not tree.visible:
+      json['display'] = 'none'
+      print ("bla")
     return json
 
 
@@ -97,6 +120,7 @@ def get_inetnum(net, status='full'):
 
     json['netname'] = list()
     json['netname'].append(net.community)
+
     return json
 
 
@@ -120,7 +144,7 @@ def get_netcount(nets):
 def generate(srcdir, destdir):
     nets = get_nets(srcdir)
     prefix_tree = build_prefixtree(nets)
-    json_tree = insert_json(prefix_tree)
+    json_tree = insert_json(insert_empty_nets(prefix_tree))
     json_tree['prefixes'] = get_netcount(nets)
     json_tree['origin'] = 'icvpn-meta'
     json_tree['date'] = time.time()

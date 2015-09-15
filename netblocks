@@ -48,7 +48,7 @@ def get_nets(srcdir):
 
 def insert(net, tree):
     for candidate in tree.children:
-        if candidate.net is net.net:
+        if candidate.net == net.net:
             return
 
         if candidate.net.overlaps(net.net):
@@ -124,7 +124,7 @@ def build_inetnums(nets):
     for k, v in nets.items():
         for net in v:
             inetnums[net.net.compressed] = get_inetnum(net)
-    inetnums[PREFIX.compressed] = get_inetnum(Prefix(PREFIX, 'root'), 'ask')
+    inetnums[PREFIX.compressed] = get_inetnum(Prefix(PREFIX, 'Freifunk'), 'ask')
     return inetnums
 
 

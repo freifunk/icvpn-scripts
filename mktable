@@ -1,92 +1,101 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import yaml
-from prettytable import PrettyTable
 from ipaddress import ip_address, ip_network, IPv6Address
-from collections import defaultdict
-from textwrap import dedent
-from optparse import OptionParser
-from socket import AF_INET, AF_INET6, inet_pton
-from formatter import Formatter
+from argparse import ArgumentParser
+
+import yaml
+
+from prettytable import PrettyTable
 
 
-def mknettable(family, data):
-    x = PrettyTable(["Network", "Community", "AS"])
-    x.align = "l"
+def mknettable(family, communities):
+    table = PrettyTable(['Network', 'Community', 'AS'])
+    table.align = 'l'
     nets = list()
-    for (c, d) in data:
-        if "networks" not in d:
+
+    for community, data in communities:
+        if 'networks' not in data:
             continue
 
-        if family not in d["networks"]:
+        if family not in data['networks']:
             continue
 
-        for net in d["networks"][family]:
-            nets.append((ip_network(net), c,
-                        d['asn'] if 'asn' in d else "(n/a)"))
+        for net in data['networks'][family]:
+            nets.append((ip_network(net), community, data['asn'] if 'asn' in data else '(n/a)'))
 
-    for net in sorted(nets, key=lambda x: x[0]):
-        x.add_row(net)
+    for net in sorted(nets, key=lambda data: data[0]):
+        table.add_row(net)
 
-    return x
+    return table
+
+
+def mkasntable(data):
+    table = PrettyTable(['ASN', 'Community', 'Tech-C'])
+    table.sortby = 'ASN'
+    table.align = 'l'
+    table.align['ASN'] = 'r'
+
+    for community, cdata in data:
+        asn = cdata['asn'] if 'asn' in cdata else 0
+        techc = ", ".join(cdata['tech-c']) if 'tech-c' in cdata else 'n/a'
+        table.add_row([asn, community, techc])
+
+    return table
+
+
+def mkbgptable(data):
+    table = PrettyTable(['IPv6', 'IPv4', 'Name', 'Community'])
+    table.align = 'l'
+    bgp = list()
+
+    for community, cdata in data:
+        if 'bgp' not in cdata:
+            continue
+
+        for name, host in cdata['bgp'].items():
+            ipv4 = ip_address(host['ipv4']) if 'ipv4' in host else 'n/a'
+            ipv6 = ip_address(host['ipv6']) if 'ipv6' in host else 'n/a'
+            bgp.append((ipv6, ipv4, name, community))
+
+    for row in sorted(bgp, key=lambda x: x[0] if isinstance(x[0], IPv6Address) else ip_address("::")):
+        table.add_row(row)
+
+    return table
 
 
 def mktable(srcdir):
     data = list()
+
     for fname in sorted(list(set(os.listdir(srcdir)))):
-        if fname.startswith("."):
+        if fname.startswith('.'):
             continue
 
-        if fname.startswith("README"):
+        if fname.startswith('README'):
             continue
 
         fpath = os.path.join(srcdir, fname)
         if os.path.isfile(fpath):
-            with open(fpath) as f:
-                data.append((fname, yaml.load(f)))
+            with open(fpath) as handle:
+                data.append((fname, yaml.load(handle)))
 
-    x = PrettyTable(["AS", "Community", "Tech-C"])
-    x.align = "l"
-    x.align["AS"] = "r"
-    for (c, d) in sorted(data, key=lambda x:
-                         x[1]['asn'] if 'asn' in x[1] else 0):
-        asn = d['asn'] if 'asn' in d else "(n/a)"
-        techc = ", ".join(d['tech-c']) if 'tech-c' in d else "(n/a)"
-        x.add_row([asn, c, techc])
-    print(str(x) + "\n")
+    # Table: ASN Allocations and Contact
+    print("{}\n".format(mkasntable(data)))
 
-    print(str(mknettable("ipv6", data)) + "\n")
-    print(str(mknettable("ipv4", data)) + "\n")
+    # Table: Network Alllocations
+    print("{}\n".format(mknettable('ipv6', data)))
+    print("{}\n".format(mknettable('ipv4', data)))
 
-    x = PrettyTable(["IPv6", "IPv4", "Name", "Community"])
-    x.align = "l"
-    bgp = list()
-    for (c, d) in data:
-        if "bgp" not in d:
-            continue
-
-        for (name, host) in d["bgp"].items():
-            v4 = ip_address(host["ipv4"]) if "ipv4" in host else "(n/a)"
-            v6 = ip_address(host["ipv6"]) if "ipv6" in host else "(n/a)"
-            bgp.append((v6, v4, name, c))
-
-    for e in sorted(bgp, key=lambda x:
-                    x[0] if isinstance(x[0], IPv6Address)
-                    else ip_address("::")):
-        x.add_row(e)
-
-    print(str(x) + "\n")
+    # Table: BGP Peers
+    print("{}\n".format(mkbgptable(data)))
 
 
-if __name__ == "__main__":
-    parser = OptionParser()
-    parser.add_option("-s", "--sourcedir", dest="src",
-                      help="Use files in DIR as input files. Default: "
-                           "../icvpn-meta/",
-                      metavar="DIR", default="../icvpn-meta/")
+if __name__ == '__main__':
+    PARSER = ArgumentParser()
+    PARSER.add_argument('-s', '--sourcedir', dest='src',
+                        help='Use files in DIR as input files. Default: ../icvpn-meta/',
+                        metavar='DIR', default='../icvpn-meta/')
 
-    (options, args) = parser.parse_args()
+    ARGS = PARSER.parse_args()
 
-    mktable(options.src)
+    mktable(ARGS.src)

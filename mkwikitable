@@ -3,7 +3,6 @@
 import sys
 import os.path
 import jinja2
-import json
 from argparse import ArgumentParser
 from socket import AF_INET, AF_INET6, inet_pton
 from filereader import get_communities_data
@@ -109,14 +108,14 @@ def mkwikitable(meta_src):
     ipv6networks = get_networklist(meta_src, api_data, family="ipv6")
     ipv4networks = get_networklist(meta_src, api_data, family="ipv4")
 
-    templateLoader = jinja2.DictLoader(template_dict)
-    templateEnv = jinja2.Environment(loader=templateLoader)
+    template_loader = jinja2.DictLoader(template_dict)
+    template_env = jinja2.Environment(loader=template_loader)
 
     template_name = "ip-netze.j2"
-    template = templateEnv.get_template(template_name)
-    templateVars = {"ipv4networks": ipv4networks, "ipv6networks": ipv6networks}
+    template = template_env.get_template(template_name)
+    context = {"ipv4networks": ipv4networks, "ipv6networks": ipv6networks}
 
-    output = template.render(templateVars)
+    output = template.render(context)
 
     print(output)
 

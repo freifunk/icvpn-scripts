@@ -59,7 +59,7 @@ optional arguments:
                         path to the local copy of the icvpn-metarepository
                         (Default: ../icvpn-meta/)
   -p PREFIX, --prefix-length PREFIX
-                        Required prefix length (Default: 16)
+                        Required prefix length (Default: 20)
   -c COUNT, --count COUNT
                         The amount of options to show (Default: 5)
 

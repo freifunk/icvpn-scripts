@@ -123,7 +123,7 @@ if __name__ == "__main__":
                         help="path to the local copy of the icvpn-meta"
                              "repository (Default: ../icvpn-meta/)")
     PARSER.add_argument('-p', '--prefix-length',
-                        type=int, default=16,
+                        type=int, default=20,
                         metavar='PREFIX', dest='required_prefix_len',
                         help="Required prefix length (Default: 16)")
     PARSER.add_argument('-c', '--count',

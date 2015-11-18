@@ -140,7 +140,7 @@ def check_rdns(data):
             if domain.endswith('.ip6.arpa') or domain.endswith('.in-addr.arpa'):
                 found = False
                 for reverse_domain in allowed_domains:
-                    if domain.endswith(reverse_domain):  # we want communitys to be able to announce only a part of the net as RDNS-capable
+                    if domain.endswith('.' + reverse_domain) or domain == reverse_domain:  # we want communitys to be able to announce only a part of the net as RDNS-capable
                         found = True
 
                 if not found:

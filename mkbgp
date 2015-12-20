@@ -12,10 +12,10 @@ class BirdFormatter(Formatter):
     "Formatter for bind9 using type forward"
     def add_data(self, asn, name, template, peer):
         self.config.append(dedent("""
-            protocol bgp %s from %s {
-                neighbor %s as %s;
-            }
-            """ % (name, template, peer, asn)))
+            protocol bgp {name} from {template} {{
+                neighbor {peer} as {asn};
+            }}
+            """.format(peer=peer, asn=asn, name=name, template=template)))
 
 
 class QuaggaFormatter(Formatter):
@@ -26,10 +26,10 @@ class QuaggaFormatter(Formatter):
 
     def add_data(self, asn, name, template, peer):
         self.config.append(dedent("""
-            neighbor %(peer)s remote-as %(asn)s
-            neighbor %(peer)s description %(name)s
-            neighbor %(peer)s peer-group %(template)s
-        """ % {"peer": peer, "asn": asn, "name": name, "template": template}))
+            neighbor {peer} remote-as {asn}
+            neighbor {peer} description {name}
+            neighbor {peer} peer-group {template}
+        """.format(peer=peer, asn=asn, name=name, template=template)))
 
 
 def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
@@ -74,8 +74,8 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
                       help="""Create config in format FMT.
-                              Possible values: %s. Default: bird""" %
-                           ", ".join(formatters.keys()),
+                              Possible values: {}. Default: bird""".format(
+                          ", ".join(formatters.keys())),
                       metavar="FMT",
                       choices=list(formatters.keys()),
                       default="bird")

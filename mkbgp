@@ -7,6 +7,7 @@ from optparse import OptionParser
 from formatter import Formatter
 from filereader import get_communities_data
 from struct import unpack
+from multiprocessing.dummy import Pool
 
 
 class BirdFormatter(Formatter):
@@ -64,6 +65,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
     formatter = fmtclass()
     template = defaultdict(lambda: defaulttemplate)
     template.update(dict(map(lambda s: s.split(":"), templates)))
+    peers = []
 
     for community, data in get_communities_data(srcdir, exclude):
         try:
@@ -79,14 +81,29 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
 
             peer = d[family]
 
-            if timeout > 0:
-                passive = not is_reachable(peer, 179, timeout)
-            else:
-                passive = False
+            peers.append({
+                "asn": asn,
+                "host": host,
+                "community": community,
+                "peer": peer,
+                "passive": False,
+            })
 
-            formatter.add_data(asn, prefix + host,
-                               template[community], peer,
-                               passive)
+    if timeout > 0:
+        def update_peer_passive(peer):
+            peer["passive"] = not is_reachable(peer["peer"], 179, timeout)
+
+        Pool(len(peers)).map(update_peer_passive, peers)
+
+        # if all peers are passive, ignore the check results
+        if all(peer["passive"] for peer in peers):
+            for peer in peers:
+                peer["passive"] = False
+
+    for peer in peers:
+        formatter.add_data(peer["asn"], prefix + peer["host"],
+                           template[peer["community"]], peer["peer"],
+                           peer["passive"])
 
     print(formatter.finalize())
 

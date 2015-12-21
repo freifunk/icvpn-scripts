@@ -100,11 +100,13 @@ Options:
                         Exclude the comma-separated list of COMMUNITIES
   -p PREFIX, --prefix=PREFIX
                         Prefix, e.g. bgp_icvpn_
+  -P TIMEOUT, --passive-offline=TIMEOUT
+                        Add peers that take longer than TIMEOUT to
+                        respond at time of creation as passive peers
   -d TEMPLATE, --default=TEMPLATE
                         Default template/peer-group to use
   -t COMMUNITY:TEMPLATE, --template=COMMUNITY:TEMPLATE
                         Use different template/peer-group for some communities
-
 ```
 
 

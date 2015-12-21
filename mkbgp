@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 
+import socket
 from collections import defaultdict
 from textwrap import dedent
 from optparse import OptionParser
-from socket import AF_INET, AF_INET6, inet_pton
 from formatter import Formatter
 from filereader import get_communities_data
+from struct import unpack
+from multiprocessing.dummy import Pool
 
 
 class BirdFormatter(Formatter):
     "Formatter for bind9 using type forward"
-    def add_data(self, asn, name, template, peer):
+    def add_data(self, asn, name, template, peer, passive=False):
         self.config.append(dedent("""
-            protocol bgp %s from %s {
-                neighbor %s as %s;
-            }
-            """ % (name, template, peer, asn)))
+            protocol bgp {name} from {template} {{
+                neighbor {peer} as {asn};""".format(
+            peer=peer, asn=asn, name=name, template=template)))
+        if passive:
+            self.config.append("    passive yes;")
+        self.config.append("}\n")
 
 
 class QuaggaFormatter(Formatter):
@@ -24,16 +28,33 @@ class QuaggaFormatter(Formatter):
     def add_comment(self, comment):
         self.config.append("! " + "\n! ".join(comment.split("\n")))
 
-    def add_data(self, asn, name, template, peer):
+    def add_data(self, asn, name, template, peer, passive=False):
         self.config.append(dedent("""
-            neighbor %(peer)s remote-as %(asn)s
-            neighbor %(peer)s description %(name)s
-            neighbor %(peer)s peer-group %(template)s
-        """ % {"peer": peer, "asn": asn, "name": name, "template": template}))
+            neighbor {peer} remote-as {asn}
+            neighbor {peer} description {name}
+            neighbor {peer} peer-group {template}
+        """.format(peer=peer, asn=asn, name=name, template=template)))
+
+
+def is_reachable(host, port, timeout):
+    """
+    Test reachability of host by opening a TCP connection to the specified
+    port.
+    """
+    try:
+        fd = socket.create_connection((host, port), timeout)
+        return True
+    except (socket.timeout, socket.error):
+        return False
+    finally:
+        try:
+            fd.close()
+        except:
+            pass
 
 
 def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
-                  fmtclass):
+                  fmtclass, timeout):
     """
     Generates a configuration using all files in srcdir
     (non-recursively) excluding communities from 'exclude'.
@@ -44,6 +65,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
     formatter = fmtclass()
     template = defaultdict(lambda: defaulttemplate)
     template.update(dict(map(lambda s: s.split(":"), templates)))
+    peers = []
 
     for community, data in get_communities_data(srcdir, exclude):
         try:
@@ -59,8 +81,29 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
 
             peer = d[family]
 
-            formatter.add_data(asn, prefix + host,
-                               template[community], peer)
+            peers.append({
+                "asn": asn,
+                "host": host,
+                "community": community,
+                "peer": peer,
+                "passive": False,
+            })
+
+    if timeout > 0:
+        def update_peer_passive(peer):
+            peer["passive"] = not is_reachable(peer["peer"], 179, timeout)
+
+        Pool(len(peers)).map(update_peer_passive, peers)
+
+        # if all peers are passive, ignore the check results
+        if all(peer["passive"] for peer in peers):
+            for peer in peers:
+                peer["passive"] = False
+
+    for peer in peers:
+        formatter.add_data(peer["asn"], prefix + peer["host"],
+                           template[peer["community"]], peer["peer"],
+                           peer["passive"])
 
     print(formatter.finalize())
 
@@ -74,8 +117,8 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-f", "--format", dest="fmt",
                       help="""Create config in format FMT.
-                              Possible values: %s. Default: bird""" %
-                           ", ".join(formatters.keys()),
+                              Possible values: {}. Default: bird""".format(
+                          ", ".join(formatters.keys())),
                       metavar="FMT",
                       choices=list(formatters.keys()),
                       default="bird")
@@ -95,6 +138,10 @@ if __name__ == "__main__":
                       help="Prefix, e.g. bgp_icvpn_",
                       metavar="PREFIX",
                       default="")
+    parser.add_option("-P", "--passive-offline", dest="passive_offline",
+                      help="""Add peers that take longer than TIMEOUT to
+                              respond at time of creation as passive peers""",
+                      default=0, type="float", metavar="TIMEOUT",)
     parser.add_option("-d", "--default", dest="defaulttemplate",
                       help="Default template/peer-group to use",
                       metavar="TEMPLATE",
@@ -110,4 +157,5 @@ if __name__ == "__main__":
 
     create_config(options.src, set(options.exclude), options.prefix,
                   options.defaulttemplate, options.templates,
-                  options.family, formatters[options.fmt])
+                  options.family, formatters[options.fmt],
+                  options.passive_offline)

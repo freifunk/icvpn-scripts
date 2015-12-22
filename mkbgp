@@ -32,8 +32,9 @@ class QuaggaFormatter(Formatter):
         self.config.append(dedent("""
             neighbor {peer} remote-as {asn}
             neighbor {peer} description {name}
-            neighbor {peer} peer-group {template}
-        """.format(peer=peer, asn=asn, name=name, template=template)))
+            neighbor {peer} peer-group {template}""".format(peer=peer, asn=asn, name=name, template=template)))
+        if passive:
+            self.config.append("neighbor {peer} passive".format(peer=peer))
 
 
 def is_reachable(host, port, timeout):

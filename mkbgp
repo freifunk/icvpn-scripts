@@ -141,8 +141,10 @@ if __name__ == "__main__":
                       default="")
     parser.add_option("-P", "--passive-offline", dest="passive_offline",
                       help="""Add peers that take longer than TIMEOUT to
-                              respond at time of creation as passive peers""",
-                      default=0, type="float", metavar="TIMEOUT",)
+                              respond at time of creation as passive peers
+                              Set to 0 do disable
+                              Default: 3 seconds""",
+                      default=3, type="float", metavar="TIMEOUT",)
     parser.add_option("-d", "--default", dest="defaulttemplate",
                       help="Default template/peer-group to use",
                       metavar="TEMPLATE",

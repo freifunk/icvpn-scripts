@@ -103,6 +103,8 @@ Options:
   -P TIMEOUT, --passive-offline=TIMEOUT
                         Add peers that take longer than TIMEOUT to
                         respond at time of creation as passive peers
+                        Set to 0 do disable
+                        Default: 3 seconds
   -d TEMPLATE, --default=TEMPLATE
                         Default template/peer-group to use
   -t COMMUNITY:TEMPLATE, --template=COMMUNITY:TEMPLATE

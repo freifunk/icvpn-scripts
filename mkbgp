@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import socket
 from collections import defaultdict
@@ -83,7 +83,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
 
             peer = d[family]
             try:
-                addr = ipaddress.IPv6Address(unicode(peer))
+                addr = ipaddress.IPv6Address(peer)
                 if addr.is_link_local:
                     peer = "{}%{}".format(peer, interface)
             except ipaddress.AddressValueError:

@@ -29,7 +29,8 @@ working directory. However, they all support the `-s` or `--source` switch to
 specify another location.
 
 ### Debian
-On Debian `apt-get install python-yaml` should install all dependencies.
+On Debian `apt-get install python3-yaml python3-requests python3-prettytable
+python3-jinja2` should install all dependencies.
 
 #### Debian Wheezy (oldstable)
 You might run into problems because of a missing ipaddress module (shipped with python >= 3.3), so install it via pip.

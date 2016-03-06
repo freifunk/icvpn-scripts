@@ -13,7 +13,7 @@ from multiprocessing.dummy import Pool
 class BirdFormatter(Formatter):
     "Formatter for bind9 using type forward"
     def add_data(self, asn, name, template, peer, interface, passive=False):
-        if self.is_link_local(peer): 
+        if self.is_link_local(peer):
             peer += "%" + interface
         self.config.append(dedent("""
             protocol bgp {name} from {template} {{
@@ -31,7 +31,7 @@ class QuaggaFormatter(Formatter):
         self.config.append("! " + "\n! ".join(comment.split("\n")))
 
     def add_data(self, asn, name, template, peer, interface, passive=False):
-        if self.is_link_local(peer): 
+        if self.is_link_local(peer):
             peer += "%" + interface
         self.config.append(dedent("""
             neighbor {peer} remote-as {asn}

@@ -1,11 +1,11 @@
 from textwrap import dedent
+import ipaddress
 
 
 class Formatter(object):
     """
     Abstract class to define the interface for formatters.
     """
-
     def __init__(self):
         """
         Initialize formatter, maybe generate a preamble for the config
@@ -41,3 +41,14 @@ class Formatter(object):
         Finalize configuration and return it
         """
         return "\n".join(self.config)
+
+    def is_link_local(self, str):
+        """
+        Checks, if a given string is a valid IPv6 link local Address
+        """
+        is_link_local = False
+        try:
+            addr = ipaddress.IPv6Address(str)
+            is_link_local = addr.is_link_local
+        finally:
+            return is_link_local

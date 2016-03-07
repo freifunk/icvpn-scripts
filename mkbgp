@@ -8,11 +8,14 @@ from formatter import Formatter
 from filereader import get_communities_data
 from struct import unpack
 from multiprocessing.dummy import Pool
+import ipaddress
 
 
 class BirdFormatter(Formatter):
     "Formatter for bind9 using type forward"
-    def add_data(self, asn, name, template, peer, passive=False):
+    def add_data(self, asn, name, template, peer, interface, passive=False):
+        if self.is_link_local(peer):
+            peer += "%" + interface
         self.config.append(dedent("""
             protocol bgp {name} from {template} {{
                 neighbor {peer} as {asn};""".format(
@@ -28,7 +31,9 @@ class QuaggaFormatter(Formatter):
     def add_comment(self, comment):
         self.config.append("! " + "\n! ".join(comment.split("\n")))
 
-    def add_data(self, asn, name, template, peer, passive=False):
+    def add_data(self, asn, name, template, peer, interface, passive=False):
+        if self.is_link_local(peer):
+            peer += "%" + interface
         self.config.append(dedent("""
             neighbor {peer} remote-as {asn}
             neighbor {peer} description {name}
@@ -37,11 +42,19 @@ class QuaggaFormatter(Formatter):
             self.config.append("neighbor {peer} passive".format(peer=peer))
 
 
-def is_reachable(host, port, timeout):
+def is_reachable(host, port, timeout, interface):
     """
     Test reachability of host by opening a TCP connection to the specified
     port.
     """
+    dst_addr = host
+    try:
+        addr = ipaddress.IPv6Address(host)
+        if addr.is_link_local:
+            host += "%" + interface
+    except (ValueError):
+        pass  # Ignore - No valid IP-Address - but still, a DNS-Lookup may work
+
     try:
         fd = socket.create_connection((host, port), timeout)
         return True
@@ -55,7 +68,7 @@ def is_reachable(host, port, timeout):
 
 
 def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
-                  fmtclass, timeout):
+                  fmtclass, timeout, interface):
     """
     Generates a configuration using all files in srcdir
     (non-recursively) excluding communities from 'exclude'.
@@ -92,7 +105,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
 
     if timeout > 0:
         def update_peer_passive(peer):
-            peer["passive"] = not is_reachable(peer["peer"], 179, timeout)
+            peer["passive"] = not is_reachable(peer["peer"], 179, timeout, interface)
 
         Pool(len(peers)).map(update_peer_passive, peers)
 
@@ -104,7 +117,7 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
     for peer in peers:
         formatter.add_data(peer["asn"], prefix + peer["host"],
                            template[peer["community"]], peer["peer"],
-                           peer["passive"])
+                           interface, peer["passive"])
 
     print(formatter.finalize())
 
@@ -154,6 +167,9 @@ if __name__ == "__main__":
                             "communities",
                       metavar="COMMUNITY:TEMPLATE",
                       default=[])
+    parser.add_option("-I", "--interface", dest="interface",
+                      help="""Interface used for link local addresses. Default: icvpn""", metavar="INTERFACE",
+                      default="icvpn")
     parser.set_defaults(family="ipv6")
 
     (options, args) = parser.parse_args()
@@ -161,4 +177,4 @@ if __name__ == "__main__":
     create_config(options.src, set(options.exclude), options.prefix,
                   options.defaulttemplate, options.templates,
                   options.family, formatters[options.fmt],
-                  options.passive_offline)
+                  options.passive_offline, options.interface)

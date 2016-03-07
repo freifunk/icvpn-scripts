@@ -8,6 +8,7 @@ from formatter import Formatter
 from filereader import get_communities_data
 from struct import unpack
 from multiprocessing.dummy import Pool
+import ipaddress
 
 
 class BirdFormatter(Formatter):
@@ -55,7 +56,7 @@ def is_reachable(host, port, timeout):
 
 
 def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
-                  fmtclass, timeout):
+                  fmtclass, timeout, interface):
     """
     Generates a configuration using all files in srcdir
     (non-recursively) excluding communities from 'exclude'.
@@ -81,6 +82,12 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
                 continue
 
             peer = d[family]
+            try:
+                addr = ipaddress.IPv6Address(unicode(peer))
+                if addr.is_link_local:
+                    peer = "{}%{}".format(peer, interface)
+            except ipaddress.AddressValueError:
+                pass  # Ignore - No valid IP-Address - but still, a DNS-Lookup may work
 
             peers.append({
                 "asn": asn,
@@ -157,6 +164,9 @@ if __name__ == "__main__":
                             "communities",
                       metavar="COMMUNITY:TEMPLATE",
                       default=[])
+    parser.add_option("-I", "--interface", dest="interface",
+                      help="""Interface used for link local addresses. Default: icvpn""", metavar="INTERFACE",
+                      default="icvpn")
     parser.set_defaults(family="ipv6")
 
     (options, args) = parser.parse_args()
@@ -164,4 +174,4 @@ if __name__ == "__main__":
     create_config(options.src, set(options.exclude), options.prefix,
                   options.defaulttemplate, options.templates,
                   options.family, formatters[options.fmt],
-                  options.passive_offline)
+                  options.passive_offline, options.interface)

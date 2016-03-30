@@ -94,7 +94,10 @@ def create_config(srcdir, exclude, prefix, defaulttemplate, templates, family,
         def update_peer_passive(peer):
             peer["passive"] = not is_reachable(peer["peer"], 179, timeout)
 
-        Pool(len(peers)).map(update_peer_passive, peers)
+        pool = Pool(len(peers))
+        pool.map(update_peer_passive, peers)
+        pool.close()
+        pool.join()
 
         # if all peers are passive, ignore the check results
         if all(peer["passive"] for peer in peers):

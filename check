@@ -306,6 +306,18 @@ def do_checks(srcdir):
                 for dnet in dnets:
                     errcnt += check_delegation(data['networks'], asns, dnet, dasn)
 
+        if 'nameservers' in data:
+            for nameserver in data['nameservers']:
+                try:
+                    ipaddress.ip_address(nameserver)
+                except ValueError:
+                    errcnt += 1
+                    error("Not an IP-Adress: %s" % nameserver)
+
+        if 'nameserver' in data:
+            warncnt += 1
+            warn("found unknown tag nameserver. Perhaps typo of nameservers?")
+
     print(ANSI_COLOR_WARN, "%d warning(s)" % warncnt, ANSI_COLOR_RESET)
     print(ANSI_COLOR_ERR, "%d error(s)" % errcnt, ANSI_COLOR_RESET)
 

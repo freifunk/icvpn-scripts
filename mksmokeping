@@ -3,6 +3,12 @@
 from textwrap import dedent
 from argparse import ArgumentParser
 
+try:
+  from natsort import natsorted as sorted
+except ImportError:
+  #use the list.sorted() function
+  pass 
+
 from formatter import Formatter
 from filereader import get_communities_data
 

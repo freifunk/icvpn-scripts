@@ -17,7 +17,7 @@ class BirdFormatter(Formatter):
         self.config.append(dedent("""
             protocol bgp {name} from {template} {{
                 neighbor {peer} as {asn};""".format(
-            peer=peer[:32], asn=asn, name=name, template=template)))
+            peer=peer, asn=asn, name=name[:32], template=template)))
         if passive:
             self.config.append("    passive yes;")
         self.config.append("}\n")

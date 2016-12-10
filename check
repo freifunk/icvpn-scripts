@@ -76,9 +76,10 @@ def check_net(family, net, nets, community):
     else:
         for other in nets:
             if other.overlaps(net):
-                errcnt += 1
-                error("%s Network overlap: %s (%s), %s (%s)" %
-                      (family, community, net, nets[other], other))
+                if 'meta-' not in community:
+                    errcnt += 1
+                    error("%s Network overlap: %s (%s), %s (%s)" %
+                          (family, community, net, nets[other], other))
 
         if errcnt == 0:
             nets[net] = community

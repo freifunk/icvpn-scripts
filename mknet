@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+from optparse import OptionParser
+from formatter import Formatter
+from filereader import get_communities_data
+
+class BindNetworkFormatter(Formatter):
+
+    def add_networks(self, asn, community, networks):
+        self.config.append(";\n".join(networks) + ";\n")
+
+
+def create_config(srcdir, fmtclass, exclude=set()):
+    """
+    Generates a configuration using all files in srcdir
+    (non-recursively) excluding communities from 'exclude'.
+
+    The files are read in lexicographic order to produce deterministic
+    results.
+    """
+    formatter = fmtclass()
+    for community, data in get_communities_data(srcdir, exclude):
+        try:
+            asn        = data['asn']
+            networks = []
+            if 'ipv4' in data['networks']:
+                networks = data['networks']['ipv4']
+            if 'ipv6' in data['networks']:
+                networks = networks + data['networks']['ipv6']
+        except (TypeError, KeyError):
+            continue
+
+        formatter.add_comment("\n%s\n" % community)
+
+        if len(networks) == 0:
+            formatter.add_comment("No valid networks found")
+        else:
+            formatter.add_networks(asn,community,networks)
+
+    print(formatter.finalize())
+
+if __name__ == "__main__":
+    formatters = {
+        "bind": BindNetworkFormatter,
+    }
+    parser = OptionParser()
+    parser.add_option("-f", "--format", dest="fmt",
+                      help="""Create config in format FMT.
+                              Possible values: %s. Default: bind""" %
+                           ", ".join(formatters.keys()),
+                      metavar="FMT",
+                      choices=list(formatters.keys()),
+                      default="bind")
+    parser.add_option("-s", "--sourcedir", dest="src",
+                      help="Use files in DIR as input files. Default: data/",
+                      metavar="DIR",
+                      default="data")
+    parser.add_option("-x", "--exclude", dest="exclude", action="append",
+                      help="Exclude COMMUNITY (may be repeated)",
+                      metavar="COMMUNITY",
+                      default=[])
+
+    (options, args) = parser.parse_args()
+
+    create_config(options.src,
+                  formatters[options.fmt],
+                  set(options.exclude)
+                  )

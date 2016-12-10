@@ -188,6 +188,26 @@ Options:
 ```
 
 
+Networks (`mknet`)
+------------------
+`mknet` generates configuration depending on network segments used by
+communities.
+
+The output of `mknet --help`:
+```
+Usage: mknet [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -f FMT, --format=FMT  Create config in format FMT.
+                        Possible values: bind. Default: bind
+  -s DIR, --sourcedir=DIR
+                        Use files in DIR as input files. Default: data/
+  -x COMMUNITY, --exclude=COMMUNITY
+                        Exclude COMMUNITY (may be repeated)
+```
+
+
 Smokeping (`mksmokeping`)
 -------------------------
 `mksmokeping` generates the configuration for a [Smokeping] instance to make it

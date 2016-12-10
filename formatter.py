@@ -36,6 +36,12 @@ class Formatter(object):
         """
         raise NotImplementedError()
 
+    def add_networks(self, asn, name, network):
+        """
+        Add config directives based on networks.
+        """
+        raise NotImplementedError()
+
     def finalize(self):
         """
         Finalize configuration and return it

@@ -12,7 +12,7 @@ import ipaddress
 
 
 class BirdFormatter(Formatter):
-    "Formatter for Bird using type forward"
+    "Formatter for Bird"
     def add_data(self, asn, name, template, peer, passive=False):
         self.config.append(dedent("""
             protocol bgp {name} from {template} {{

@@ -66,6 +66,7 @@ def create_config(srcdir, exclude, fmtclass):
 
     print(formatter.finalize())
 
+
 if __name__ == '__main__':
     formatters = {
         'SmokePing': SmokePingFormatter,

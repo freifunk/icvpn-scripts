@@ -323,6 +323,7 @@ def do_checks(srcdir):
 
     return 0 if errcnt == 0 else 1
 
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-s", "--sourcedir", dest="src",

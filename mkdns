@@ -124,6 +124,7 @@ def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
 
     print(formatter.finalize())
 
+
 if __name__ == "__main__":
     def try_inet_pton(af, ip):
         try:

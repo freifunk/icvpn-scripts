@@ -6,7 +6,6 @@ from textwrap import dedent
 from optparse import OptionParser
 from formatter import Formatter
 from filereader import get_communities_data
-from struct import unpack
 from multiprocessing.dummy import Pool
 import ipaddress
 

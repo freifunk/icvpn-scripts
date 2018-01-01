@@ -72,6 +72,7 @@ class UnboundForwardFormatter(object):
             for zone in zone_type['forward'].keys():
                 self.buffer.append('\tdomain-insecure: "%s"' % zone)
             for zone in zone_type['reverse'].keys():
+                self.buffer.append('\tdomain-insecure: "%s"' % zone)
                 self.buffer.append('\tlocal-zone: "%s" nodefault' % zone)
 
     def add_zone_blocks(self):

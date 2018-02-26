@@ -97,6 +97,7 @@ class UnboundForwardFormatter(object):
 class PowerDNSForwardFormatter(Formatter):
     """Formatter for pdns using type forward"""
     def add_data(self, domains, servers):
+        servers = ['[%s]' % server if ':' in server else server for server in servers]
         for domain in domains:
             self.config.append(dedent("""
                 %s=%s

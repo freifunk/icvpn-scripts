@@ -102,8 +102,7 @@ class PowerDNSForwardFormatter(Formatter):
             self.config.append(dedent("""
                 %s=%s
             """ % (domain, ", ".join(servers))).lstrip())
-    
-    
+
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     """
     Generates a configuration using all files in srcdir

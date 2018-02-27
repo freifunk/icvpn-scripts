@@ -94,6 +94,7 @@ class UnboundForwardFormatter(object):
         self.add_zone_blocks()
         return "\n".join(self.buffer)
 
+
 class PowerDNSForwardFormatter(Formatter):
     """Formatter for pdns using type forward"""
     def add_data(self, domains, servers):
@@ -102,6 +103,7 @@ class PowerDNSForwardFormatter(Formatter):
             self.config.append(dedent("""
                 %s=%s
             """ % (domain, ", ".join(servers))).lstrip())
+
 
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     """

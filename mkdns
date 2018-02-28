@@ -5,6 +5,7 @@ from optparse import OptionParser
 from socket import AF_INET, AF_INET6, inet_pton, error as socket_error
 from formatter import Formatter
 from filereader import get_communities_data
+from ipaddress import ip_address
 
 
 class DnsmasqFormatter(Formatter):
@@ -95,6 +96,19 @@ class UnboundForwardFormatter(object):
         return "\n".join(self.buffer)
 
 
+class PowerDNSForwardFormatter(Formatter):
+    """Formatter for pdns using type forward"""
+    def add_data(self, domains, servers):
+        servers = [
+            "[{}]".format(server) if ip_address(server).version == 6 else server
+            for server in servers
+        ]
+        for domain in domains:
+            self.config.append(dedent("""
+                %s=%s
+            """ % (domain, ", ".join(servers))).lstrip())
+
+
 def create_config(srcdir, fmtclass, exclude=set(), filters=[]):
     """
     Generates a configuration using all files in srcdir
@@ -139,6 +153,7 @@ if __name__ == "__main__":
         "bind": BindFormatter,
         "bind-forward": BindForwardFormatter,
         "unbound": UnboundForwardFormatter,
+        "pdns": PowerDNSForwardFormatter,
     }
     filters = {
         "v4": lambda value: try_inet_pton(AF_INET, value),

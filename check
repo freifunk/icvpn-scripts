@@ -137,6 +137,9 @@ def check_rdns(data):
 
     if 'domains' in data:
         for domain in data['domains']:
+            if '_' in domain:
+                errcnt += 1
+                error("Domain %s has illegal characters" % domain)
             if domain.endswith('.ip6.arpa') or domain.endswith('.in-addr.arpa'):
                 found = False
                 for reverse_domain in allowed_domains:

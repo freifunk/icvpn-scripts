@@ -77,7 +77,7 @@ def mktable(srcdir):
         fpath = os.path.join(srcdir, fname)
         if os.path.isfile(fpath):
             with open(fpath) as handle:
-                data.append((fname, yaml.load(handle)))
+                data.append((fname, yaml.safe_load(handle)))
 
     # Table: ASN Allocations and Contact
     print("{}\n".format(mkasntable(data)))

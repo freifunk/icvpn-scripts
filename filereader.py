@@ -21,7 +21,7 @@ def get_communities_data(srcdir, exclude,
         if os.path.isfile(fpath):
             with open(fpath) as f:
                 try:
-                    data = yaml.load(f)
+                    data = yaml.safe_load(f)
                 except yaml.YAMLError:
                     error_handler(fname)
                     continue

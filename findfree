@@ -125,7 +125,7 @@ if __name__ == "__main__":
     PARSER.add_argument('-p', '--prefix-length',
                         type=int, default=20,
                         metavar='PREFIX', dest='required_prefix_len',
-                        help="Required prefix length (Default: 16)")
+                        help="Required prefix length (Default: 20)")
     PARSER.add_argument('-c', '--count',
                         type=int, default=5,
                         metavar='COUNT', dest='option_count',

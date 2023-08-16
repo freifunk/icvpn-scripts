@@ -298,6 +298,9 @@ def do_checks(srcdir):
             errcnt += check_rdns(data)
             for domain in data.get('domains', []):
                 errcnt += check_dupe("Domain", domain.upper(), domains, community)
+                if domain.endswith('.'):
+                    errcnt += 1
+                    error("Domain ends with .: %s" % (domain))
                 try:
                     domain.encode("ascii").decode("idna")
                 except (UnicodeEncodeError, UnicodeError):
